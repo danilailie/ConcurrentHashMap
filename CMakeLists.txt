@@ -3,5 +3,5 @@
 set (CXX_STANDARD 17)
 
 project ("ConcurrentHashMap")
-
-add_executable (ConcurrentHashMap "main.cpp")
+include_directories(inc)
+add_executable (ConcurrentHashMap "src/main.cpp")

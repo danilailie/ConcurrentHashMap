@@ -6,25 +6,13 @@
 #include <shared_mutex>
 #include <vector>
 
+#include "Iterator.hpp"
+
 template< class KeyT, class ValueT, class HashFuncT = std::hash< KeyT > >
 class ConcurrentHashMap
 {
 public:
-  struct Iterator
-  {
-  public:
-    std::pair<KeyT, ValueT> operator*()
-    {
-      return map->getIterValue(key);
-    }
-  private:
-    Iterator(KeyT aKey, ConcurrentHashMap* aMap) : key(aKey), map(aMap) {}
-
-    KeyT key;
-    ConcurrentHashMap* map;
-
-    friend class ConcurrentHashMap;
-  };
+  using Iterator = Iterator<KeyT, ValueT, HashFuncT>;
 
 private:
   struct InternalValue
@@ -88,7 +76,7 @@ private:
 
   std::size_t currentMaxSize = 32;
 
-  friend struct Iterator;
+  friend class Iterator;
 };
 
 template< class KeyT, class ValueT, class HashFuncT>
