@@ -1,11 +1,7 @@
-﻿# CMakeList.txt : CMake project for ConcurrentHashMap, include source and define
-# project specific logic here.
-#
-cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required (VERSION 3.8)
+
+set (CXX_STANDARD 17)
 
 project ("ConcurrentHashMap")
 
-# Add source to this project's executable.
-add_executable (ConcurrentHashMap "main.cpp" "ConcurrentHashMap.h")
-
-# TODO: Add tests and install targets if needed.
+add_executable (ConcurrentHashMap "main.cpp")
