@@ -24,16 +24,16 @@ public:
   };
 
 private:
-  using ConcurrentHashMap = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  using ConcurrentHashMapT = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
 
-  Iterator (KeyT aKey, ConcurrentHashMap *aMap) : key (aKey), map (aMap)
+  Iterator (KeyT aKey, ConcurrentHashMapT *aMap) : key (aKey), map (aMap)
   {
   }
 
   KeyT key;
-  ConcurrentHashMap *map;
+  ConcurrentHashMapT *map;
 
-  friend class ConcurrentHashMap;
+  friend ConcurrentHashMapT;
 };
 
 #endif

@@ -9,7 +9,7 @@
 template <class KeyT, class ValueT, class HashFuncT> class Bucket
 {
 public:
-  using InternalValue = InternalValue<KeyT, ValueT, HashFuncT>;
+  using InternalValueT = InternalValue<KeyT, ValueT, HashFuncT>;
 
   Bucket ()
   {
@@ -31,7 +31,7 @@ public:
   }
 
   std::unique_ptr<std::shared_mutex> bucketMutex;
-  std::vector<InternalValue> values;
+  std::vector<InternalValueT> values;
 };
 
 #endif

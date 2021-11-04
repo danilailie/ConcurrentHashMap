@@ -13,26 +13,26 @@
 template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class ConcurrentHashMap
 {
 public:
-  using Iterator = Iterator<KeyT, ValueT, HashFuncT>;
+  using IteratorT = Iterator<KeyT, ValueT, HashFuncT>;
 
 public:
   ConcurrentHashMap ();
 
   std::size_t getSize () const;
 
-  Iterator begin ();
+  IteratorT begin ();
 
-  Iterator end ();
+  IteratorT end ();
 
-  Iterator insert (const KeyT &aKey, const ValueT &aValue);
+  IteratorT insert (const KeyT &aKey, const ValueT &aValue);
 
-  Iterator find (const KeyT &aKey);
+  IteratorT find (const KeyT &aKey);
 
-  Iterator erase (const Iterator anIterator);
+  IteratorT erase (const IteratorT anIterator);
 
 private:
-  using InternalValue = InternalValue<KeyT, ValueT, HashFuncT>;
-  using Bucket = Bucket<KeyT, ValueT, HashFuncT>;
+  using InternalValueT = InternalValue<KeyT, ValueT, HashFuncT>;
+  using BucketT = Bucket<KeyT, ValueT, HashFuncT>;
 
 private:
   std::pair<KeyT, ValueT> getIterValue (const KeyT &aKey);
@@ -40,11 +40,11 @@ private:
 
 private:
   HashFuncT hashFunc;
-  std::vector<Bucket> buckets;
+  std::vector<BucketT> buckets;
 
   std::size_t currentMaxSize = 32;
 
-  friend class Iterator;
+  friend IteratorT;
 };
 
 template <class KeyT, class ValueT, class HashFuncT> ConcurrentHashMap<KeyT, ValueT, HashFuncT>::ConcurrentHashMap ()
@@ -60,34 +60,34 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getSize () const
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::IteratorT
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin ()
 {
-  return Iterator (getFirstKey (), this);
+  return IteratorT (getFirstKey (), this);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::IteratorT
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::end ()
 {
-  return Iterator (-1, this);
+  return IteratorT (-1, this);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::IteratorT
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const ValueT &aValue)
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentMaxSize;
 
   std::unique_lock<std::shared_mutex> bucketLock (*buckets[bucketIndex].bucketMutex);
-  buckets[bucketIndex].values.push_back (InternalValue (aKey, aValue));
+  buckets[bucketIndex].values.push_back (InternalValueT (aKey, aValue));
 
-  return ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator (aKey, this);
+  return ConcurrentHashMap<KeyT, ValueT, HashFuncT>::IteratorT (aKey, this);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::IteratorT
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey)
 {
   auto hashResult = hashFunc (aKey);
@@ -97,7 +97,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey)
     {
       if (buckets[bucketIndex].values[i].compareKey (aKey))
 	{
-	  return Iterator (aKey, this);
+	  return IteratorT (aKey, this);
 	}
     }
   return end ();
