@@ -15,7 +15,11 @@ public:
   compareKey (const KeyT &aKey)
   {
     std::shared_lock<std::shared_mutex> lock (*valueMutex);
-    return key == aKey;
+    if (!isMarkedForDelete)
+      {
+	return key == aKey;
+      }
+    return false;
   }
 
   std::pair<KeyT, ValueT>
@@ -23,6 +27,20 @@ public:
   {
     std::shared_lock<std::shared_mutex> lock (*valueMutex);
     return std::make_pair (key, userValue);
+  }
+
+  void
+  erase ()
+  {
+    std::unique_lock<std::shared_mutex> lock (*valueMutex);
+    isMarkedForDelete = true;
+  }
+
+  bool
+  isAvailable () const
+  {
+    std::shared_lock<std::shared_mutex> lock (*valueMutex);
+    return !isMarkedForDelete;
   }
 
 private:

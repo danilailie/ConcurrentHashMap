@@ -12,6 +12,12 @@ public:
     return map->getIterValue (key);
   }
 
+  KeyT
+  getKey () const
+  {
+    return key;
+  }
+
   friend bool
   operator== (const Iterator &a, const Iterator &b)
   {

@@ -19,15 +19,30 @@ public:
   std::size_t
   getSize ()
   {
+    std::size_t count = 0;
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    return values.size ();
+    for (auto i = 0; i < values.size (); ++i)
+      {
+	if (values[i].isAvailable ())
+	  {
+	    ++count;
+	  }
+      }
+    return count;
   }
 
   KeyT
   getFirstKey ()
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    return values[0].getKeyValuePair ().first;
+    for (auto i = 0; i < values.size (); ++i)
+      {
+	if (values[i].isAvailable ())
+	  {
+	    return values[i].getKeyValuePair ().first;
+	  }
+      }
+    return -1;
   }
 
   std::unique_ptr<std::shared_mutex> bucketMutex;

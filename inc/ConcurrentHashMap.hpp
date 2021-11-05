@@ -104,6 +104,24 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey)
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::IteratorT
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const IteratorT anIterator)
+{
+  auto hashResult = hashFunc (anIterator.getKey ());
+  auto bucketIndex = hashResult % currentMaxSize;
+  std::shared_lock<std::shared_mutex> bucketLock (*buckets[bucketIndex].bucketMutex);
+  for (auto i = 0; i < buckets[bucketIndex].values.size (); ++i)
+    {
+      if (buckets[bucketIndex].values[i].compareKey (anIterator.getKey ()))
+	{
+	  buckets[bucketIndex].values[i].erase ();
+	  return IteratorT (anIterator.getKey (), this);
+	}
+    }
+  return end ();
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
 std::pair<KeyT, ValueT>
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey)
 {
