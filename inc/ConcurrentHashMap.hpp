@@ -30,6 +30,8 @@ public:
 
   IteratorT erase (const IteratorT anIterator);
 
+  IteratorT erase (const KeyT &aKey);
+
 private:
   using InternalValueT = InternalValue<KeyT, ValueT, HashFuncT>;
   using BucketT = Bucket<KeyT, ValueT, HashFuncT>;
@@ -107,15 +109,22 @@ template <class KeyT, class ValueT, class HashFuncT>
 typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::IteratorT
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const IteratorT anIterator)
 {
-  auto hashResult = hashFunc (anIterator.getKey ());
+  return erase (anIterator.getKey ());
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::IteratorT
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
+{
+  auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentMaxSize;
   std::shared_lock<std::shared_mutex> bucketLock (*buckets[bucketIndex].bucketMutex);
   for (auto i = 0; i < buckets[bucketIndex].values.size (); ++i)
     {
-      if (buckets[bucketIndex].values[i].compareKey (anIterator.getKey ()))
+      if (buckets[bucketIndex].values[i].compareKey (aKey))
 	{
 	  buckets[bucketIndex].values[i].erase ();
-	  return IteratorT (anIterator.getKey (), this);
+	  return IteratorT (aKey, this);
 	}
     }
   return end ();
