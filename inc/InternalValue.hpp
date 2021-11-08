@@ -3,6 +3,8 @@
 
 #include <shared_mutex>
 
+template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
+
 template <class KeyT, class ValueT, class HashFuncT> class InternalValue
 {
 public:
@@ -48,6 +50,8 @@ private:
   bool isMarkedForDelete;
   KeyT key;
   ValueT userValue;
+
+  friend ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
 };
 
 #endif

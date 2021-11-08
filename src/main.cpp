@@ -32,11 +32,16 @@ main ()
   auto it5 = myMap.insert (5, 5);
   std::cout << (*it5).first << " " << (*it5).second << '\n';
 
-  myMap.erase (it5);
-  myMap.erase (5);
+  //   myMap.erase (it5);
+  //   myMap.erase (5);
 
   auto it4 = myMap.begin ();
   std::cout << (*it4).first << " " << (*it4).second << '\n';
+
+  myMap.rehash ();
+
+  std::cout << (*it4).first << " " << (*it4).second << '\n';
+  std::cout << (*it5).first << " " << (*it5).second << '\n';
 
   return 0;
 }

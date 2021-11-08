@@ -10,6 +10,19 @@
 #include "InternalValue.hpp"
 #include "Iterator.hpp"
 
+std::size_t
+getNextPrimeNumber (const std::size_t &aValue)
+{
+  std::vector<std::size_t> primes = { 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 };
+  for (auto i = 0; i < primes.size (); ++i)
+    {
+      if (primes[i] > aValue)
+	{
+	  return primes[i];
+	}
+    }
+  return 10007;
+}
 template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class ConcurrentHashMap
 {
 public:
@@ -32,6 +45,8 @@ public:
 
   IteratorT erase (const KeyT &aKey);
 
+  void rehash ();
+
 private:
   using InternalValueT = InternalValue<KeyT, ValueT, HashFuncT>;
   using BucketT = Bucket<KeyT, ValueT, HashFuncT>;
@@ -39,12 +54,13 @@ private:
 private:
   std::pair<KeyT, ValueT> getIterValue (const KeyT &aKey);
   KeyT getFirstKey ();
+  //   void rehash ();
 
 private:
   HashFuncT hashFunc;
   std::vector<BucketT> buckets;
-
-  std::size_t currentMaxSize = 32;
+  std::mutex rehashMutex;
+  std::size_t currentMaxSize = 31; // prime
 
   friend IteratorT;
 };
@@ -162,6 +178,36 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getFirstKey ()
     }
 
   return -1;
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+void
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::rehash ()
+{
+  currentMaxSize = getNextPrimeNumber (currentMaxSize);
+
+  std::vector<BucketT> newBuckets;
+  newBuckets.resize (currentMaxSize);
+
+  std::unique_lock<std::mutex> lock (rehashMutex);
+
+  for (auto i = 0; i < buckets.size (); ++i)
+    {
+      std::shared_lock<std::shared_mutex> bucketLock (*(buckets[i].bucketMutex));
+      for (auto j = 0; j < buckets[i].values.size (); ++j)
+	{
+	  std::shared_lock<std::shared_mutex> bucketLock (*(buckets[i].values[j].valueMutex));
+	  if (!buckets[i].values[j].isMarkedForDelete)
+	    {
+	      auto hashResult = hashFunc (buckets[i].values[j].key);
+	      auto bucketIndex = hashResult % currentMaxSize;
+	      newBuckets[bucketIndex].values.push_back (
+		InternalValueT (buckets[i].values[j].key, buckets[i].values[j].userValue));
+	    }
+	}
+    }
+
+  buckets = std::move (newBuckets);
 }
 
 #endif

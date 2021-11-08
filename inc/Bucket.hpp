@@ -6,6 +6,8 @@
 
 #include "InternalValue.hpp"
 
+template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
+
 template <class KeyT, class ValueT, class HashFuncT> class Bucket
 {
 public:
@@ -47,6 +49,8 @@ public:
 
   std::unique_ptr<std::shared_mutex> bucketMutex;
   std::vector<InternalValueT> values;
+
+  friend ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
 };
 
 #endif
