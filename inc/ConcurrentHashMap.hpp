@@ -193,10 +193,10 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::rehash ()
 
   for (auto i = 0; i < buckets.size (); ++i)
     {
-      std::shared_lock<std::shared_mutex> bucketLock (*(buckets[i].bucketMutex));
+      std::unique_lock<std::shared_mutex> bucketLock (*(buckets[i].bucketMutex));
       for (auto j = 0; j < buckets[i].values.size (); ++j)
 	{
-	  std::shared_lock<std::shared_mutex> bucketLock (*(buckets[i].values[j].valueMutex));
+	  std::unique_lock<std::shared_mutex> bucketLock (*(buckets[i].values[j].valueMutex));
 	  if (!buckets[i].values[j].isMarkedForDelete)
 	    {
 	      auto hashResult = hashFunc (buckets[i].values[j].key);
