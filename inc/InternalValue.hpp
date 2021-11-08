@@ -5,10 +5,10 @@
 
 template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
 
-template <class KeyT, class ValueT, class HashFuncT> class InternalValue
+template <class KeyT, class ValueT, class HashFuncT> class InternalValueType
 {
 public:
-  InternalValue (const KeyT &aKey, const ValueT &aValue) : isMarkedForDelete (false), key (aKey), userValue (aValue)
+  InternalValueType (const KeyT &aKey, const ValueT &aValue) : isMarkedForDelete (false), key (aKey), userValue (aValue)
   {
     valueMutex = std::make_unique<std::shared_mutex> ();
   }

@@ -11,7 +11,7 @@ template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
 template <class KeyT, class ValueT, class HashFuncT> class Bucket
 {
 public:
-  using InternalValueT = InternalValue<KeyT, ValueT, HashFuncT>;
+  using InternalValue = InternalValueType<KeyT, ValueT, HashFuncT>;
 
   Bucket ()
   {
@@ -48,7 +48,7 @@ public:
   }
 
   std::unique_ptr<std::shared_mutex> bucketMutex;
-  std::vector<InternalValueT> values;
+  std::vector<InternalValue> values;
 
   friend ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
 };

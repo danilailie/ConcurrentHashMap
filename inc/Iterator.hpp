@@ -3,7 +3,7 @@
 
 template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
 
-template <class KeyT, class ValueT, class HashFuncT> class Iterator
+template <class KeyT, class ValueT, class HashFuncT> class RandomAccessIteratorType
 {
 public:
   std::pair<KeyT, ValueT>
@@ -19,27 +19,27 @@ public:
   }
 
   friend bool
-  operator== (const Iterator &a, const Iterator &b)
+  operator== (const RandomAccessIteratorType &a, const RandomAccessIteratorType &b)
   {
     return a.key == b.key && a.map == b.map;
   };
   friend bool
-  operator!= (const Iterator &a, const Iterator &b)
+  operator!= (const RandomAccessIteratorType &a, const RandomAccessIteratorType &b)
   {
     return a.key != b.key || a.map != b.map;
   };
 
 private:
-  using ConcurrentHashMapT = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  using ConcurrentHashMap = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
 
-  Iterator (KeyT aKey, ConcurrentHashMapT *aMap) : key (aKey), map (aMap)
+  RandomAccessIteratorType (KeyT aKey, ConcurrentHashMap *aMap) : key (aKey), map (aMap)
   {
   }
 
   KeyT key;
-  ConcurrentHashMapT *map;
+  ConcurrentHashMap *map;
 
-  friend ConcurrentHashMapT;
+  friend ConcurrentHashMap;
 };
 
 #endif
