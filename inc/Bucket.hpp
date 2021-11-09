@@ -39,6 +39,13 @@ public:
     return -1;
   }
 
+  KeyT
+  getKeyAt (std::size_t index)
+  {
+    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    return values[index].getKey ();
+  }
+
   void
   insert (const KeyT &aKey, const ValueT &aValue)
   {
@@ -89,6 +96,34 @@ public:
 	  }
       }
     return std::pair<KeyT, ValueT> ();
+  }
+
+  std::size_t
+  getFirstValueIndex () const
+  {
+    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    for (auto i = 0; i < values.size (); ++i)
+      {
+	if (values[i].isAvailable ())
+	  {
+	    return i;
+	  }
+      }
+    return values.size ();
+  }
+
+  std::size_t
+  getNextValueIndex (std::size_t index)
+  {
+    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    for (auto i = index + 1; i < values.size (); ++i)
+      {
+	if (values[i].isAvailable ())
+	  {
+	    return i;
+	  }
+      }
+    return -1;
   }
 
 private:

@@ -2,6 +2,7 @@
 #define _ITERATOR_HPP_
 
 template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
+template <class KeyT, class ValueT, class HashFuncT> class ForwardIteratorType;
 
 template <class KeyT, class ValueT, class HashFuncT> class RandomAccessIteratorType
 {
@@ -31,6 +32,7 @@ public:
 
 private:
   using ConcurrentHashMap = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  using FWIterator = ForwardIteratorType<KeyT, ValueT, HashFuncT>;
 
   RandomAccessIteratorType (KeyT aKey, ConcurrentHashMap *aMap) : key (aKey), map (aMap)
   {
@@ -40,6 +42,7 @@ private:
   ConcurrentHashMap *map;
 
   friend ConcurrentHashMap;
+  friend FWIterator;
 };
 
 #endif

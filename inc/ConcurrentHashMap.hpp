@@ -35,7 +35,7 @@ public:
 
   std::size_t getSize () const;
 
-  RAIterator begin ();
+  FWIterator begin ();
 
   RAIterator end ();
 
@@ -58,6 +58,7 @@ private:
   std::pair<KeyT, ValueT> getIterValue (const FWIterator &anIter);
   std::size_t getNextPopulatedBucketIndex (int anIndex);
   KeyT getFirstKey ();
+  KeyT getNextElement (std::size_t &bucketIndex, std::size_t &valueIndex);
 
 private:
   HashFuncT hashFunc;
@@ -82,10 +83,19 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getSize () const
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::FWIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin ()
 {
-  return RAIterator (getFirstKey (), this);
+  for (auto i = 0; i < buckets.size (); ++i)
+    {
+      if (buckets[i].getSize () > 0)
+	{
+	  auto valueIndex = buckets[i].getFirstValueIndex ();
+	  auto key = buckets[i].getKeyAt (valueIndex);
+	  return FWIterator (key, this, i, valueIndex);
+	}
+    }
+  return FWIterator ();
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -155,8 +165,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 std::size_t
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextPopulatedBucketIndex (int anIndex)
 {
-  // TODO: Ilie
-  for (auto i = anIndex; i < buckets.size (); ++i)
+  for (auto i = anIndex + 1; i < buckets.size (); ++i)
     {
       if (buckets[i].getSize () > 0)
 	{
@@ -179,6 +188,33 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getFirstKey ()
     }
 
   return -1;
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+KeyT
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketIndex, std::size_t &valueIndex)
+{
+  auto nextValueIndex = buckets[bucketIndex].getNextValueIndex (valueIndex);
+
+  if (nextValueIndex == -1)
+    {
+      auto nextBucketIndex = getNextPopulatedBucketIndex (bucketIndex);
+      if (nextBucketIndex == -1)
+	{
+	  return -1;
+	}
+      else
+	{
+	  bucketIndex = nextBucketIndex;
+	  valueIndex = buckets[nextBucketIndex].getFirstValueIndex ();
+	  return buckets[nextBucketIndex].getKeyAt (valueIndex);
+	}
+    }
+  else
+    {
+      valueIndex = nextValueIndex;
+      return buckets[bucketIndex].getKeyAt (valueIndex);
+    }
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
