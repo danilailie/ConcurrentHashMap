@@ -102,8 +102,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const Valu
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentMaxSize;
 
-  std::unique_lock<std::shared_mutex> bucketLock (*buckets[bucketIndex].bucketMutex);
-  buckets[bucketIndex].values.push_back (InternalValue (aKey, aValue));
+  buckets[bucketIndex].insert (aKey, aValue);
 
   return ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator (aKey, this);
 }
@@ -114,15 +113,8 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey)
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentMaxSize;
-  std::shared_lock<std::shared_mutex> bucketLock (*buckets[bucketIndex].bucketMutex);
-  for (auto i = 0; i < buckets[bucketIndex].values.size (); ++i)
-    {
-      if (buckets[bucketIndex].values[i].compareKey (aKey))
-	{
-	  return RAIterator (aKey, this);
-	}
-    }
-  return end ();
+
+  return RAIterator (buckets[bucketIndex].find (aKey), this);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -138,16 +130,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentMaxSize;
-  std::shared_lock<std::shared_mutex> bucketLock (*buckets[bucketIndex].bucketMutex);
-  for (auto i = 0; i < buckets[bucketIndex].values.size (); ++i)
-    {
-      if (buckets[bucketIndex].values[i].compareKey (aKey))
-	{
-	  buckets[bucketIndex].values[i].erase ();
-	  return IteratorT (aKey, this);
-	}
-    }
-  return end ();
+  return RAIterator (buckets[bucketIndex].erase (aKey), this);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -157,16 +140,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey)
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentMaxSize;
 
-  std::shared_lock<std::shared_mutex> bucketLock (*buckets[bucketIndex].bucketMutex);
-  for (auto i = 0; i < buckets[bucketIndex].values.size (); ++i)
-    {
-      if (buckets[bucketIndex].values[i].compareKey (aKey))
-	{
-	  return buckets[bucketIndex].values[i].getKeyValuePair ();
-	}
-    }
-
-  return std::pair<KeyT, ValueT> ();
+  return buckets[bucketIndex].getKeyValuePair (aKey);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>

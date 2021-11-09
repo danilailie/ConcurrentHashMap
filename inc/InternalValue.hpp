@@ -45,13 +45,22 @@ public:
     return !isMarkedForDelete;
   }
 
+  KeyT
+  getKey () const
+  {
+    std::shared_lock<std::shared_mutex> lock (*valueMutex);
+    return key;
+  }
+
 private:
+  using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+
   std::unique_ptr<std::shared_mutex> valueMutex;
   bool isMarkedForDelete;
   KeyT key;
   ValueT userValue;
 
-  friend ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  friend Map;
 };
 
 #endif

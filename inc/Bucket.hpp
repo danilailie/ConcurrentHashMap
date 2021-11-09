@@ -21,16 +21,8 @@ public:
   std::size_t
   getSize ()
   {
-    std::size_t count = 0;
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (auto i = 0; i < values.size (); ++i)
-      {
-	if (values[i].isAvailable ())
-	  {
-	    ++count;
-	  }
-      }
-    return count;
+    return currentSize;
   }
 
   KeyT
@@ -41,16 +33,72 @@ public:
       {
 	if (values[i].isAvailable ())
 	  {
-	    return values[i].getKeyValuePair ().first;
+	    return values[i].getKey ();
 	  }
       }
     return -1;
   }
 
+  void
+  insert (const KeyT &aKey, const ValueT &aValue)
+  {
+    std::unique_lock<std::shared_mutex> lock (*bucketMutex);
+    values.push_back (InternalValue (aKey, aValue));
+    ++currentSize;
+  }
+
+  KeyT
+  find (const KeyT &aKey)
+  {
+    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    for (auto i = 0; i < values.size (); ++i)
+      {
+	if (values[i].compareKey (aKey))
+	  {
+	    return aKey;
+	  }
+      }
+    return -1;
+  }
+
+  KeyT
+  erase (const KeyT &aKey)
+  {
+    std::unique_lock<std::shared_mutex> lock (*bucketMutex);
+    for (auto i = 0; i < values.size (); ++i)
+      {
+	if (values[i].compareKey (aKey))
+	  {
+	    values[i].erase ();
+	    --currentSize;
+	    return aKey;
+	  }
+      }
+    return -1;
+  }
+
+  std::pair<KeyT, ValueT>
+  getKeyValuePair (const KeyT &aKey)
+  {
+    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    for (auto i = 0; i < values.size (); ++i)
+      {
+	if (values[i].compareKey (aKey))
+	  {
+	    return values[i].getKeyValuePair ();
+	  }
+      }
+    return std::pair<KeyT, ValueT> ();
+  }
+
+private:
+  using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+
   std::unique_ptr<std::shared_mutex> bucketMutex;
   std::vector<InternalValue> values;
+  std::size_t currentSize = 0;
 
-  friend ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  friend Map;
 };
 
 #endif
