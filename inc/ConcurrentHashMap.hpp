@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Bucket.hpp"
+#include "ForwardIterator.hpp"
 #include "InternalValue.hpp"
 #include "RandomAccessIterator.hpp"
 
@@ -16,7 +17,7 @@ getNextPrimeNumber (const std::size_t &aValue)
   std::vector<std::size_t> primes = { 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 };
   for (auto i = 0; i < primes.size (); ++i)
     {
-      if (primes[i] > aValue * 2)
+      if (primes[i] > aValue)
 	{
 	  return primes[i];
 	}
@@ -26,24 +27,25 @@ getNextPrimeNumber (const std::size_t &aValue)
 template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class ConcurrentHashMap
 {
 public:
-  using Iterator = RandomAccessIteratorType<KeyT, ValueT, HashFuncT>;
+  using RAIterator = RandomAccessIteratorType<KeyT, ValueT, HashFuncT>;
+  using FWIterator = ForwardIteratorType<KeyT, ValueT, HashFuncT>;
 
 public:
   ConcurrentHashMap ();
 
   std::size_t getSize () const;
 
-  Iterator begin ();
+  RAIterator begin ();
 
-  Iterator end ();
+  RAIterator end ();
 
-  Iterator insert (const KeyT &aKey, const ValueT &aValue);
+  RAIterator insert (const KeyT &aKey, const ValueT &aValue);
 
-  Iterator find (const KeyT &aKey);
+  RAIterator find (const KeyT &aKey);
 
-  Iterator erase (const Iterator anIterator);
+  RAIterator erase (const RAIterator &anIterator);
 
-  Iterator erase (const KeyT &aKey);
+  RAIterator erase (const KeyT &aKey);
 
   void rehash ();
 
@@ -53,6 +55,8 @@ private:
 
 private:
   std::pair<KeyT, ValueT> getIterValue (const KeyT &aKey);
+  std::pair<KeyT, ValueT> getIterValue (const FWIterator &anIter);
+  std::size_t getNextPopulatedBucketIndex (int anIndex);
   KeyT getFirstKey ();
 
 private:
@@ -61,7 +65,8 @@ private:
   std::mutex rehashMutex;
   std::size_t currentMaxSize = 31; // prime
 
-  friend Iterator;
+  friend RAIterator;
+  friend FWIterator;
 };
 
 template <class KeyT, class ValueT, class HashFuncT> ConcurrentHashMap<KeyT, ValueT, HashFuncT>::ConcurrentHashMap ()
@@ -77,21 +82,21 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getSize () const
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin ()
 {
-  return Iterator (getFirstKey (), this);
+  return RAIterator (getFirstKey (), this);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::end ()
 {
-  return Iterator (-1, this);
+  return RAIterator (-1, this);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const ValueT &aValue)
 {
   auto hashResult = hashFunc (aKey);
@@ -100,11 +105,11 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const Valu
   std::unique_lock<std::shared_mutex> bucketLock (*buckets[bucketIndex].bucketMutex);
   buckets[bucketIndex].values.push_back (InternalValue (aKey, aValue));
 
-  return ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator (aKey, this);
+  return ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator (aKey, this);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey)
 {
   auto hashResult = hashFunc (aKey);
@@ -114,21 +119,21 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey)
     {
       if (buckets[bucketIndex].values[i].compareKey (aKey))
 	{
-	  return Iterator (aKey, this);
+	  return RAIterator (aKey, this);
 	}
     }
   return end ();
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const Iterator anIterator)
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const RAIterator &anIterator)
 {
   return erase (anIterator.getKey ());
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::Iterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 {
   auto hashResult = hashFunc (aKey);
@@ -165,6 +170,29 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey)
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
+std::pair<KeyT, ValueT>
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const FWIterator &anIter)
+{
+  return std::make_pair (buckets[anIter.bucketIndex].values[anIter.valueIndex].key,
+			 buckets[anIter.bucketIndex].values[anIter.valueIndex].userValue);
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+std::size_t
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextPopulatedBucketIndex (int anIndex)
+{
+  // TODO: Ilie
+  for (auto i = anIndex; i < buckets.size (); ++i)
+    {
+      if (buckets[i].getSize () > 0)
+	{
+	  return i;
+	}
+    }
+  return -1;
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
 KeyT
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getFirstKey ()
 {
@@ -183,7 +211,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 void
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::rehash ()
 {
-  currentMaxSize = getNextPrimeNumber (currentMaxSize);
+  currentMaxSize = getNextPrimeNumber (currentMaxSize * 2);
 
   std::vector<Bucket> newBuckets;
   newBuckets.resize (currentMaxSize);
