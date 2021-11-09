@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "ConcurrentHashMap.hpp"
+#include "ForwardIterator.hpp"
 
 template <typename T> struct customHash
 {

@@ -8,7 +8,7 @@
 
 #include "Bucket.hpp"
 #include "InternalValue.hpp"
-#include "Iterator.hpp"
+#include "RandomAccessIterator.hpp"
 
 std::size_t
 getNextPrimeNumber (const std::size_t &aValue)
