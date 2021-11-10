@@ -14,7 +14,8 @@
 std::size_t
 getNextPrimeNumber (const std::size_t &aValue)
 {
-  std::vector<std::size_t> primes = { 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 };
+  std::vector<std::size_t> primes = { 2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37, 41,
+				      43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 };
   for (auto i = 0; i < primes.size (); ++i)
     {
       if (primes[i] > aValue)
@@ -56,7 +57,7 @@ private:
 private:
   std::pair<KeyT, ValueT> getIterValue (const KeyT &aKey);
   std::pair<KeyT, ValueT> getIterValue (const FWIterator &anIter);
-  std::size_t getNextPopulatedBucketIndex (int anIndex);
+  std::size_t getNextPopulatedBucketIndex (std::size_t anIndex);
   KeyT getFirstKey ();
   KeyT getNextElement (std::size_t &bucketIndex, std::size_t &valueIndex);
 
@@ -64,7 +65,7 @@ private:
   HashFuncT hashFunc;
   std::vector<Bucket> buckets;
   std::mutex rehashMutex;
-  std::size_t currentMaxSize = 31; // prime
+  std::size_t currentMaxSize = 3; // prime
 
   friend RAIterator;
   friend FWIterator;
@@ -163,7 +164,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const FWIterator &anIt
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::size_t
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextPopulatedBucketIndex (int anIndex)
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextPopulatedBucketIndex (std::size_t anIndex)
 {
   for (auto i = anIndex + 1; i < buckets.size (); ++i)
     {
@@ -238,8 +239,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::rehash ()
 	    {
 	      auto hashResult = hashFunc (buckets[i].values[j].key);
 	      auto bucketIndex = hashResult % currentMaxSize;
-	      newBuckets[bucketIndex].values.push_back (
-		InternalValue (buckets[i].values[j].key, buckets[i].values[j].userValue));
+	      newBuckets[bucketIndex].insert (buckets[i].values[j].key, buckets[i].values[j].userValue);
 	    }
 	}
     }

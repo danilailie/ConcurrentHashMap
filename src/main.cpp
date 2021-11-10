@@ -50,8 +50,14 @@ main ()
   myMap.insert (4, 5);
   myMap.insert (5, 6);
 
-  //   myMap.rehash ();
+  for (auto it = myMap.begin (); it != myMap.end (); ++it)
+    {
+      std::cout << (*it).first << " " << (*it).second << "\n";
+    }
 
+  myMap.rehash ();
+
+  std::cout << '\n';
   for (auto it = myMap.begin (); it != myMap.end (); ++it)
     {
       std::cout << (*it).first << " " << (*it).second << "\n";
