@@ -65,7 +65,7 @@ private:
   HashFuncT hashFunc;
   std::vector<BucketType> buckets;
   std::mutex rehashMutex;
-  std::size_t currentMaxSize = 3; // prime
+  std::size_t currentMaxSize = 71; // prime
 
   friend RAIterator;
   friend FWIterator;

@@ -3,5 +3,12 @@
 set(CMAKE_CXX_STANDARD 17)
 
 project ("ConcurrentHashMap")
+
 include_directories(inc)
-add_executable (ConcurrentHashMap "src/main.cpp")
+
+set(SOURCES 
+    src/LargeObject.cpp
+    src/main.cpp
+)
+
+add_executable (ConcurrentHashMap ${SOURCES})
