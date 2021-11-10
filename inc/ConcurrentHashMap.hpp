@@ -234,12 +234,11 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::rehash ()
       std::unique_lock<std::shared_mutex> bucketLock (*(buckets[i].bucketMutex));
       for (auto j = 0; j < buckets[i].values.size (); ++j)
 	{
-	  std::unique_lock<std::shared_mutex> bucketLock (*(buckets[i].values[j].valueMutex));
-	  if (!buckets[i].values[j].isMarkedForDelete)
+	  if (buckets[i].values[j].isAvailable ())
 	    {
 	      auto hashResult = hashFunc (buckets[i].values[j].key);
 	      auto bucketIndex = hashResult % currentMaxSize;
-	      newBuckets[bucketIndex].insert (buckets[i].values[j].key, buckets[i].values[j].userValue);
+	      newBuckets[bucketIndex].insert (buckets[i].values[j].getKeyValuePair ());
 	    }
 	}
     }

@@ -54,6 +54,12 @@ public:
     ++currentSize;
   }
 
+  void
+  insert (const std::pair<KeyT, ValueT> &aKeyValuePair)
+  {
+    insert (aKeyValuePair.first, aKeyValuePair.second);
+  }
+
   KeyT
   find (const KeyT &aKey)
   {
