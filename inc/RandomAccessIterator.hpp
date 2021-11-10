@@ -31,17 +31,17 @@ public:
   };
 
 private:
-  using ConcurrentHashMap = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
   using FWIterator = ForwardIteratorType<KeyT, ValueT, HashFuncT>;
 
-  RandomAccessIteratorType (KeyT aKey, ConcurrentHashMap *aMap) : key (aKey), map (aMap)
+  RandomAccessIteratorType (KeyT aKey, Map *aMap) : key (aKey), map (aMap)
   {
   }
 
   KeyT key;
-  ConcurrentHashMap *map;
+  Map *map;
 
-  friend ConcurrentHashMap;
+  friend Map;
   friend FWIterator;
 };
 

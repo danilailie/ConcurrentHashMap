@@ -52,7 +52,7 @@ public:
 
 private:
   using InternalValue = InternalValueType<KeyT, ValueT, HashFuncT>;
-  using Bucket = Bucket<KeyT, ValueT, HashFuncT>;
+  using BucketType = Bucket<KeyT, ValueT, HashFuncT>;
 
 private:
   std::pair<KeyT, ValueT> getIterValue (const KeyT &aKey);
@@ -63,7 +63,7 @@ private:
 
 private:
   HashFuncT hashFunc;
-  std::vector<Bucket> buckets;
+  std::vector<BucketType> buckets;
   std::mutex rehashMutex;
   std::size_t currentMaxSize = 3; // prime
 
@@ -224,7 +224,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::rehash ()
 {
   currentMaxSize = getNextPrimeNumber (currentMaxSize * 2);
 
-  std::vector<Bucket> newBuckets;
+  std::vector<BucketType> newBuckets;
   newBuckets.resize (currentMaxSize);
 
   std::unique_lock<std::mutex> lock (rehashMutex);
