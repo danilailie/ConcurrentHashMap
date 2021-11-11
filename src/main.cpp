@@ -30,5 +30,12 @@ main ()
 
   std::cout << "\nCopy count untill now: " << LargeObject::getCopyCount () << '\n';
 
+  for (auto it = myMap.begin (); it != myMap.end (); ++it)
+    {
+      std::cout << (*it).second->getIndex () << " ";
+    }
+
+  std::cout << "\nCopy count untill now: " << LargeObject::getCopyCount () << '\n';
+
   return 0;
 }
