@@ -45,6 +45,13 @@ public:
     return !isMarkedForDelete;
   }
 
+  void
+  setAvailable ()
+  {
+    std::unique_lock<std::shared_mutex> lock (*valueMutex);
+    isMarkedForDelete = false;
+  }
+
   KeyT
   getKey () const
   {

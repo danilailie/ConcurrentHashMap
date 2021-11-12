@@ -15,7 +15,7 @@
 int
 main ()
 {
-  ConcurrentHashMap<int, std::shared_ptr<LargeObject>> myMap;
+  ConcurrentHashMap<int, std::shared_ptr<LargeObject>> myMap (10007);
   //   ConcurrentHashMap<int, int> myMap;
 
   //   for (auto i = 0; i < 100; ++i)
@@ -49,13 +49,13 @@ main ()
   };
 
   std::vector<std::thread> workers;
-  const int twoMil = /*2000000;*/ 10000;
+  const int tenK = 10000;
 
   auto startTime = std::chrono::steady_clock::now ();
 
-  for (auto i = 0; i < 5; ++i)
+  for (auto i = 0; i < 10; ++i)
     {
-      workers.push_back (std::thread ([populateFunc, i] () { populateFunc (i * twoMil, (i + 1) * twoMil); }));
+      workers.push_back (std::thread ([populateFunc, i, tenK] () { populateFunc (i * tenK, (i + 1) * tenK); }));
     }
 
   for (auto &worker : workers)
@@ -70,7 +70,8 @@ main ()
   //       std::cout << (*it).second /*->getIndex ()*/ << " ";
   //     }
 
-  std::cout << "\nDuration: " << std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime).count ()
+  std::cout << "\nConcurrent Hash Map Duration: "
+	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime).count ()
 	    << " milliseconds\n";
 
   //   std::unordered_map<int, int> standardMap;
@@ -78,13 +79,16 @@ main ()
 
   startTime = std::chrono::steady_clock::now ();
 
-  for (auto i = 0; i < twoMil * 5; ++i)
+  for (auto i = 0; i < tenK * 10; ++i)
     {
       standardMap.insert (std::make_pair (i, std::make_shared<LargeObject> (i)));
     }
 
   endTime = std::chrono::steady_clock::now ();
 
-  std::cout << "\nDuration: " << std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime).count ()
+  std::cout << "\nUnordered Map Duration: "
+	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime).count ()
 	    << " milliseconds\n";
+
+  return 0;
 }

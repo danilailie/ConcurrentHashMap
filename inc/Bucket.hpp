@@ -46,12 +46,38 @@ public:
     return values[index].getKey ();
   }
 
-  void
+  bool
   insert (const KeyT &aKey, const ValueT &aValue)
   {
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
-    values.push_back (InternalValue (aKey, aValue));
-    ++currentSize;
+
+    std::size_t foundPosition = -1;
+    for (auto i = 0; i < values.size (); ++i)
+      {
+	if (values[i].getKey () == aKey)
+	  {
+	    foundPosition = i;
+	  }
+      }
+
+    if (foundPosition == -1)
+      {
+	values.push_back (InternalValue (aKey, aValue));
+	++currentSize;
+      }
+    else
+      {
+	if (!values[foundPosition].isAvailable ())
+	  {
+	    values[foundPosition].setAvailable ();
+	  }
+	else
+	  {
+	    return false;
+	  }
+      }
+
+    return true;
   }
 
   void
