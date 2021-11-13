@@ -85,7 +85,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 std::size_t
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getSize () const
 {
-  return buckets.size ();
+  return valueCount;
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
