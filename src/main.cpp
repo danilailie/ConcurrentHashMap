@@ -1,7 +1,4 @@
-﻿// ConcurrentHashMap.cpp : Defines the entry point for the application.
-//
-
-#include <assert.h>
+﻿#include <assert.h>
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -15,12 +12,12 @@
 int
 main ()
 {
-  ConcurrentHashMap<int, std::shared_ptr<LargeObject>> myMap (10007);
+  ConcurrentHashMap<int, std::shared_ptr<int>> myMap (10007);
 
   auto populateFunc = [&myMap] (int left, int right) {
     for (auto i = left; i < right; ++i)
       {
-	myMap.insert (i, std::make_shared<LargeObject> (i));
+	myMap.insert (i, std::make_shared<int> (i));
       }
   };
 

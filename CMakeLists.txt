@@ -12,3 +12,7 @@ set(SOURCES
 )
 
 add_executable (ConcurrentHashMap ${SOURCES})
+
+if(UNIX)
+    target_link_libraries(ConcurrentHashMap pthread)
+endif()
