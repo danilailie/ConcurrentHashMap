@@ -149,6 +149,7 @@ typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 {
   std::unique_lock<std::shared_mutex> lock (rehashMutex);
+
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
 
@@ -159,7 +160,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
       erasedCount++;
     }
 
-  if (erasedCount >= valueCount / 3)
+  if (erasedCount >= valueCount / 2)
     {
       eraseUnavailableValues ();
     }

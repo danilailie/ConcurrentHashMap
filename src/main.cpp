@@ -12,12 +12,12 @@
 int
 main ()
 {
-  ConcurrentHashMap<int, std::shared_ptr<LargeObject>> myMap (10007);
+  ConcurrentHashMap<int, std::shared_ptr<int>> myMap (10007);
 
   auto populateFunc = [&myMap] (int left, int right) {
     for (auto i = left; i < right; ++i)
       {
-	myMap.insert (i, std::make_shared<LargeObject> (i));
+	myMap.insert (i, std::make_shared<int> (i));
       }
   };
 
@@ -102,13 +102,13 @@ main ()
 
   //----------- Unordered map -----------//
 
-  std::unordered_map<int, std::shared_ptr<LargeObject>> standardMap;
+  std::unordered_map<int, std::shared_ptr<int>> standardMap;
 
   auto startTimeSTD = std::chrono::steady_clock::now ();
 
   for (auto i = 0; i < tenK * 10; ++i)
     {
-      standardMap.insert (std::make_pair (i, std::make_shared<LargeObject> (i)));
+      standardMap.insert (std::make_pair (i, std::make_shared<int> (i)));
     }
 
   auto endTimeSTD = std::chrono::steady_clock::now ();
