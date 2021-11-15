@@ -2,6 +2,7 @@
 #define _CONCURRENT_HASH_MAP_HPP_
 
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <shared_mutex>
 #include <vector>
@@ -147,6 +148,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 {
+  std::unique_lock<std::shared_mutex> lock (rehashMutex);
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
 
@@ -243,8 +245,6 @@ template <class KeyT, class ValueT, class HashFuncT>
 void
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::eraseUnavailableValues ()
 {
-  std::unique_lock<std::shared_mutex> lock (rehashMutex);
-
   valueCount = 0;
   for (auto i = 0; i < buckets.size (); ++i)
     {
