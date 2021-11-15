@@ -131,5 +131,18 @@ main ()
 	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimeFindSTD - startTimeFindSTD).count ()
 	    << " milliseconds\n";
 
+  auto startTimeEraseSTD = std::chrono::steady_clock::now ();
+
+  for (auto i = 0; i < tenK * 10; ++i)
+    {
+      auto it = standardMap.erase (i);
+    }
+
+  auto endTimeEraseSTD = std::chrono::steady_clock::now ();
+
+  std::cout << "\nUnordered Map - Erase Duration: "
+	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimeEraseSTD - startTimeEraseSTD).count ()
+	    << " milliseconds\n";
+
   return 0;
 }
