@@ -1,7 +1,4 @@
-﻿// ConcurrentHashMap.cpp : Defines the entry point for the application.
-//
-
-#include <assert.h>
+﻿#include <assert.h>
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -15,43 +12,35 @@
 int
 main ()
 {
-  ConcurrentHashMap<int, std::shared_ptr<LargeObject>> myMap (10007);
-  //   ConcurrentHashMap<int, int> myMap;
-
-  //   for (auto i = 0; i < 100; ++i)
-  //     {
-  //       myMap.insert (i, std::make_shared<LargeObject> (i));
-  //     }
-
-  //   std::cout << "\nCopy count untill now: " << LargeObject::getCopyCount () << '\n';
-
-  //   for (auto i = 0; i < 100; ++i)
-  //     {
-  //       auto it = myMap.find (i);
-  //       assert (it != myMap.end ());
-  //       std::cout << (*it).second->getIndex () << " ";
-  //     }
-
-  //   std::cout << "\nCopy count untill now: " << LargeObject::getCopyCount () << '\n';
-
-  //   for (auto it = myMap.begin (); it != myMap.end (); ++it)
-  //     {
-  //       std::cout << (*it).second->getIndex () << " ";
-  //     }
-
-  //   std::cout << "\nCopy count untill now: " << LargeObject::getCopyCount () << '\n';
+  ConcurrentHashMap<int, std::shared_ptr<int>> myMap (10007);
 
   auto populateFunc = [&myMap] (int left, int right) {
     for (auto i = left; i < right; ++i)
       {
-	myMap.insert (i, std::make_shared<LargeObject> (i));
+	myMap.insert (i, std::make_shared<int> (i));
+      }
+  };
+
+  auto findFunc = [&myMap] (int left, int right) {
+    for (auto i = left; i < right; ++i)
+      {
+	auto it = myMap.find (i);
+	assert (it != myMap.end ());
+      }
+  };
+
+  auto eraseFunc = [&myMap] (int left, int right) {
+    for (auto i = left; i < right; ++i)
+      {
+	auto it = myMap.erase (i);
+	assert (it != myMap.end ());
       }
   };
 
   std::vector<std::thread> workers;
   const int tenK = 10000;
 
-  auto startTime = std::chrono::steady_clock::now ();
+  auto startTimePopulate = std::chrono::steady_clock::now ();
 
   for (auto i = 0; i < 10; ++i)
     {
@@ -63,31 +52,96 @@ main ()
       worker.join ();
     }
 
-  auto endTime = std::chrono::steady_clock::now ();
+  auto endTimePopulate = std::chrono::steady_clock::now ();
 
-  //   for (auto it = myMap.begin (); it != myMap.end (); ++it)
-  //     {
-  //       std::cout << (*it).second /*->getIndex ()*/ << " ";
-  //     }
-
-  std::cout << "\nConcurrent Hash Map Duration: "
-	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime).count ()
+  std::cout << "\nConcurrent Hash Map - Insert Duration: "
+	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimePopulate - startTimePopulate).count ()
 	    << " milliseconds\n";
 
-  //   std::unordered_map<int, int> standardMap;
-  std::unordered_map<int, std::shared_ptr<LargeObject>> standardMap;
+  workers.clear ();
+  auto startTimeFind = std::chrono::steady_clock::now ();
 
-  startTime = std::chrono::steady_clock::now ();
+  for (auto i = 0; i < 10; ++i)
+    {
+      workers.push_back (std::thread ([findFunc, i, tenK] () { findFunc (i * tenK, (i + 1) * tenK); }));
+    }
+
+  for (auto &worker : workers)
+    {
+      worker.join ();
+    }
+
+  auto endTimeFind = std::chrono::steady_clock::now ();
+
+  std::cout << "\nConcurrent Hash Map - Find Duration: "
+	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimeFind - startTimeFind).count ()
+	    << " milliseconds\n";
+
+  workers.clear ();
+  auto startTimeErase = std::chrono::steady_clock::now ();
+
+  for (auto i = 0; i < 10; ++i)
+    {
+      workers.push_back (std::thread ([eraseFunc, i, tenK] () { eraseFunc (i * tenK, (i + 1) * tenK); }));
+    }
+
+  for (auto &worker : workers)
+    {
+      worker.join ();
+    }
+
+  auto endTimeErase = std::chrono::steady_clock::now ();
+
+  std::cout << "\nConcurrent Hash Map - Erase Duration: "
+	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimeErase - startTimeErase).count ()
+	    << " milliseconds\n";
+
+  assert (myMap.erase (0) == myMap.end ());
+
+  std::cout << "\nConcurrent Hash Map - Size: " << myMap.getSize () << '\n';
+
+  //----------- Unordered map -----------//
+
+  std::unordered_map<int, std::shared_ptr<int>> standardMap;
+
+  auto startTimeSTD = std::chrono::steady_clock::now ();
 
   for (auto i = 0; i < tenK * 10; ++i)
     {
-      standardMap.insert (std::make_pair (i, std::make_shared<LargeObject> (i)));
+      standardMap.insert (std::make_pair (i, std::make_shared<int> (i)));
     }
 
-  endTime = std::chrono::steady_clock::now ();
+  auto endTimeSTD = std::chrono::steady_clock::now ();
 
-  std::cout << "\nUnordered Map Duration: "
-	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime).count ()
+  std::cout << "\nUnordered Map - Insert Duration: "
+	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimeSTD - startTimeSTD).count ()
+	    << " milliseconds\n";
+
+  auto startTimeFindSTD = std::chrono::steady_clock::now ();
+
+  for (auto i = 0; i < tenK * 10; ++i)
+    {
+      auto it = standardMap.find (i);
+      assert (it != standardMap.end ());
+    }
+
+  auto endTimeFindSTD = std::chrono::steady_clock::now ();
+
+  std::cout << "\nUnordered Map - Find Duration: "
+	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimeFindSTD - startTimeFindSTD).count ()
+	    << " milliseconds\n";
+
+  auto startTimeEraseSTD = std::chrono::steady_clock::now ();
+
+  for (auto i = 0; i < tenK * 10; ++i)
+    {
+      auto it = standardMap.erase (i);
+    }
+
+  auto endTimeEraseSTD = std::chrono::steady_clock::now ();
+
+  std::cout << "\nUnordered Map - Erase Duration: "
+	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimeEraseSTD - startTimeEraseSTD).count ()
 	    << " milliseconds\n";
 
   return 0;

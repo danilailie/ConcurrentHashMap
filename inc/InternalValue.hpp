@@ -13,6 +13,12 @@ public:
     valueMutex = std::make_unique<std::shared_mutex> ();
   }
 
+  InternalValueType (const std::pair<KeyT, ValueT> &aKeyValuePair)
+      : isMarkedForDelete (false), key (aKeyValuePair.first), userValue (aKeyValuePair.second)
+  {
+    valueMutex = std::make_unique<std::shared_mutex> ();
+  }
+
   bool
   compareKey (const KeyT &aKey)
   {
