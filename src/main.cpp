@@ -37,6 +37,16 @@ main ()
       }
   };
 
+  auto traverseFunc = [&myMap] () {
+    std::size_t valueCount = 0;
+    for (auto it = myMap.begin (); it != myMap.end (); ++it)
+      {
+	++valueCount;
+      }
+
+    std::cout << "\nTraversed " << valueCount << " values.\n";
+  };
+
   std::vector<std::thread> workers;
   const int tenK = 10000;
 
@@ -78,6 +88,10 @@ main ()
 	    << " milliseconds\n";
 
   workers.clear ();
+
+  auto traverseThread = std::thread ([traverseFunc] () { traverseFunc (); });
+  traverseThread.join ();
+
   auto startTimeErase = std::chrono::steady_clock::now ();
 
   for (auto i = 0; i < 10; ++i)

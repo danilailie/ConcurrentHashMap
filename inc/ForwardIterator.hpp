@@ -11,15 +11,27 @@ public:
   using RAIterator = RandomAccessIteratorType<KeyT, ValueT, HashFuncT>;
   using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
 
-  ForwardIteratorType ()
-  {
-  }
-
   ForwardIteratorType (const ForwardIteratorType &other)
   {
     map = other.map;
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
+    instances[map]++;
+    if (instances[aMap] == 1)
+      {
+	locks.insert (std::make_pair (aMap, std::shared_lock<std::shared_mutex> (aMap->rehashMutex)));
+      }
+  }
+
+  ~ForwardIteratorType ()
+  {
+    instances[map]--;
+
+    if (instances[map] == 0)
+      {
+	instances.erase (map);
+	locks.erase (map);
+      }
   }
 
   ForwardIteratorType &
@@ -86,6 +98,12 @@ private:
   ForwardIteratorType (const KeyT &aKey, Map *aMap, std::size_t aBucketIndex, std::size_t aValueIndex)
       : key (aKey), map (aMap), bucketIndex (aBucketIndex), valueIndex (aValueIndex)
   {
+    instances[aMap]++;
+
+    if (instances[aMap] == 1)
+      {
+	locks.insert (std::make_pair (aMap, std::shared_lock<std::shared_mutex> (aMap->rehashMutex)));
+      }
   }
 
 private:
@@ -94,7 +112,18 @@ private:
   std::size_t bucketIndex;
   std::size_t valueIndex;
 
+  static std::unordered_map<Map *, std::size_t> instances;
+  static std::unordered_map<Map *, std::shared_lock<std::shared_mutex>> locks;
+
   friend Map;
 };
+
+template <class KeyT, class ValueT, class HashFuncT>
+std::unordered_map<ConcurrentHashMap<KeyT, ValueT, HashFuncT> *, std::size_t>
+  ForwardIteratorType<KeyT, ValueT, HashFuncT>::instances;
+
+template <class KeyT, class ValueT, class HashFuncT>
+std::unordered_map<ConcurrentHashMap<KeyT, ValueT, HashFuncT> *, std::shared_lock<std::shared_mutex>>
+  ForwardIteratorType<KeyT, ValueT, HashFuncT>::locks;
 
 #endif

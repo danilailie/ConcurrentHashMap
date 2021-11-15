@@ -102,7 +102,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin ()
 	  return FWIterator (key, this, i, valueIndex);
 	}
     }
-  return FWIterator ();
+  return FWIterator (-1, this, -1, -1);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
