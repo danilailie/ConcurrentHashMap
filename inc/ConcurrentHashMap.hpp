@@ -248,18 +248,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::eraseUnavailableValues ()
   valueCount = 0;
   for (auto i = 0; i < buckets.size (); ++i)
     {
-      BucketType newBucket;
-      std::unique_lock<std::shared_mutex> bucketLock (*(buckets[i].bucketMutex));
-
-      for (auto j = 0; j < buckets[i].values.size (); ++j)
-	{
-	  if (buckets[i].values[j].isAvailable ())
-	    {
-	      newBucket.insert (buckets[i].values[j].getKeyValuePair ());
-	      valueCount++;
-	    }
-	}
-      buckets[i] = std::move (newBucket);
+      valueCount += buckets[i].eraseUnavailableValues ();
     }
   erasedCount = 0;
 }

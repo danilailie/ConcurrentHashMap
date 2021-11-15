@@ -159,6 +159,26 @@ public:
   }
 
 private:
+  std::size_t
+  eraseUnavailableValues ()
+  {
+    std::unique_lock<std::shared_mutex> lock (*bucketMutex);
+    std::vector<InternalValue> newValues;
+    std::size_t count = 0;
+
+    for (auto i = 0; i < values.size (); ++i)
+      {
+	if (values[i].isAvailable ())
+	  {
+	    newValues.push_back (InternalValue (values[i].getKeyValuePair ()));
+	    count++;
+	  }
+      }
+    values = std::move (newValues);
+    return count;
+  }
+
+private:
   using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
 
   std::unique_ptr<std::shared_mutex> bucketMutex;

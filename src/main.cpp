@@ -102,13 +102,13 @@ main ()
 
   //----------- Unordered map -----------//
 
-  std::unordered_map<int, std::shared_ptr<LargeObject>> standardMap;
+  std::unordered_map<int, std::shared_ptr<int>> standardMap;
 
   auto startTimeSTD = std::chrono::steady_clock::now ();
 
   for (auto i = 0; i < tenK * 10; ++i)
     {
-      standardMap.insert (std::make_pair (i, std::make_shared<LargeObject> (i)));
+      standardMap.insert (std::make_pair (i, std::make_shared<int> (i)));
     }
 
   auto endTimeSTD = std::chrono::steady_clock::now ();
