@@ -17,9 +17,9 @@ public:
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
     instances[map]++;
-    if (instances[aMap] == 1)
+    if (instances[map] == 1)
       {
-	locks.insert (std::make_pair (aMap, std::shared_lock<std::shared_mutex> (aMap->rehashMutex)));
+	locks.insert (std::make_pair (map, std::shared_lock<std::shared_mutex> (map->rehashMutex)));
       }
   }
 

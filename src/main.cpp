@@ -90,7 +90,6 @@ main ()
   workers.clear ();
 
   auto traverseThread = std::thread ([traverseFunc] () { traverseFunc (); });
-  traverseThread.join ();
 
   auto startTimeErase = std::chrono::steady_clock::now ();
 
@@ -105,6 +104,8 @@ main ()
     }
 
   auto endTimeErase = std::chrono::steady_clock::now ();
+
+  traverseThread.join ();
 
   std::cout << "\nConcurrent Hash Map - Erase Duration: "
 	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimeErase - startTimeErase).count ()
