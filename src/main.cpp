@@ -69,6 +69,10 @@ main ()
 	    << " milliseconds\n";
 
   workers.clear ();
+
+  auto rehashThread = std::thread ([&myMap] () { myMap.rehash (); });
+  rehashThread.join ();
+
   auto startTimeFind = std::chrono::steady_clock::now ();
 
   for (auto i = 0; i < 10; ++i)

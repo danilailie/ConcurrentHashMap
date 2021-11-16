@@ -258,12 +258,11 @@ template <class KeyT, class ValueT, class HashFuncT>
 void
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::rehash ()
 {
-  currentBucketCount = getNextPrimeNumber (currentBucketCount * 2);
+  std::unique_lock<std::shared_mutex> lock (rehashMutex);
 
+  currentBucketCount = getNextPrimeNumber (currentBucketCount * 2);
   std::vector<BucketType> newBuckets;
   newBuckets.resize (currentBucketCount);
-
-  std::unique_lock<std::shared_mutex> lock (rehashMutex);
 
   for (auto i = 0; i < buckets.size (); ++i)
     {
