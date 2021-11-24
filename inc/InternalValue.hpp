@@ -20,7 +20,7 @@ public:
   }
 
   bool
-  compareKey (const KeyT &aKey)
+  compareKey (const KeyT &aKey) const
   {
     std::shared_lock<std::shared_mutex> lock (*valueMutex);
     if (!isMarkedForDelete)

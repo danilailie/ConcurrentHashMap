@@ -17,7 +17,7 @@ getNextPrimeNumber (const std::size_t &aValue)
 {
   std::vector<std::size_t> primes = { 2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37,	 41,	43,
 				      47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 10007, 20021, 40063 };
-  for (auto i = 0; i < primes.size (); ++i)
+  for (std::size_t i = 0; i < primes.size (); ++i)
     {
       if (primes[i] > aValue)
 	{
@@ -41,7 +41,8 @@ public:
 
   RAIterator end ();
 
-  RAIterator insert (const KeyT &aKey, const ValueT &aValue);
+  std::pair<RAIterator, bool> insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair);
+  std::pair<RAIterator, bool> insert (const KeyT &aKey, const ValueT &aValue);
 
   RAIterator find (const KeyT &aKey);
 
@@ -93,7 +94,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::FWIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin ()
 {
-  for (auto i = 0; i < buckets.size (); ++i)
+  for (std::size_t i = 0; i < buckets.size (); ++i)
     {
       if (buckets[i].getSize () > 0)
 	{
@@ -113,18 +114,27 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::end ()
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
+std::pair<typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator, bool>
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair)
+{
+  return insert (aKeyValuePair.first, aKeyValuePair.second);
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+std::pair<typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator, bool>
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const ValueT &aValue)
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
 
+  bool added = false;
   if (buckets[bucketIndex].insert (aKey, aValue))
     {
       valueCount++;
+      added = true;
     }
 
-  return ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator (aKey, this);
+  return std::make_pair (ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator (aKey, this), added);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -153,7 +163,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
 
-  auto key = buckets[bucketIndex].erase (aKey);
+  int key = buckets[bucketIndex].erase (aKey);
 
   if (key != -1)
     {
@@ -219,11 +229,11 @@ template <class KeyT, class ValueT, class HashFuncT>
 KeyT
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketIndex, std::size_t &valueIndex)
 {
-  auto nextValueIndex = buckets[bucketIndex].getNextValueIndex (valueIndex);
+  int nextValueIndex = buckets[bucketIndex].getNextValueIndex (valueIndex);
 
   if (nextValueIndex == -1)
     {
-      auto nextBucketIndex = getNextPopulatedBucketIndex (bucketIndex);
+      int nextBucketIndex = getNextPopulatedBucketIndex (bucketIndex);
       if (nextBucketIndex == -1)
 	{
 	  return -1;
@@ -247,7 +257,7 @@ void
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::eraseUnavailableValues ()
 {
   valueCount = 0;
-  for (auto i = 0; i < buckets.size (); ++i)
+  for (std::size_t i = 0; i < buckets.size (); ++i)
     {
       valueCount += buckets[i].eraseUnavailableValues ();
     }

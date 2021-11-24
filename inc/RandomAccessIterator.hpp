@@ -19,16 +19,27 @@ public:
     return key;
   }
 
-  friend bool
-  operator== (const RandomAccessIteratorType &a, const RandomAccessIteratorType &b)
+  RandomAccessIteratorType &
+  operator= (const RandomAccessIteratorType &other)
   {
-    return a.key == b.key && a.map == b.map;
-  };
-  friend bool
-  operator!= (const RandomAccessIteratorType &a, const RandomAccessIteratorType &b)
+    if (this == &other)
+      return *this;
+
+    key = other.key;
+    map = other.map;
+  }
+
+  bool
+  operator== (const RandomAccessIteratorType &other)
   {
-    return a.key != b.key || a.map != b.map;
-  };
+    return key == other.key && map == other.map;
+  }
+
+  bool
+  operator!= (const RandomAccessIteratorType &other)
+  {
+    return key != other.key || map != other.map;
+  }
 
 private:
   using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;

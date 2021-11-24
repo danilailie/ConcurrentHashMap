@@ -107,8 +107,8 @@ private:
   }
 
 private:
-  Map *map;
   KeyT key; // used for compare between iterator types.
+  Map *map;
   std::size_t bucketIndex;
   std::size_t valueIndex;
 
