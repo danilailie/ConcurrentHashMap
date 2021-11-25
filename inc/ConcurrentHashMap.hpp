@@ -9,6 +9,7 @@
 
 #include "Bucket.hpp"
 #include "ForwardIterator.hpp"
+#include "HashMapUtils.hpp"
 #include "InternalValue.hpp"
 #include "RandomAccessIterator.hpp"
 
@@ -103,7 +104,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin ()
 	  return FWIterator (key, this, i, valueIndex);
 	}
     }
-  return FWIterator (-1, this, -1, -1);
+  return FWIterator (InvalidKeyValue<KeyT> (), this, -1, -1);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -163,9 +164,9 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
 
-  int key = buckets[bucketIndex].erase (aKey);
+  KeyT key = buckets[bucketIndex].erase (aKey);
 
-  if (key != -1)
+  if (key != InvalidKeyValue<KeyT> ())
     {
       erasedCount++;
     }
@@ -236,7 +237,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketI
       int nextBucketIndex = getNextPopulatedBucketIndex (bucketIndex);
       if (nextBucketIndex == -1)
 	{
-	  return -1;
+	  return InvalidKeyValue<KeyT> ();
 	}
       else
 	{

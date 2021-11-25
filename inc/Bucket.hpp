@@ -4,6 +4,7 @@
 #include <shared_mutex>
 #include <vector>
 
+#include "HashMapUtils.hpp"
 #include "InternalValue.hpp"
 
 template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
@@ -113,7 +114,7 @@ public:
 	    return aKey;
 	  }
       }
-    return -1;
+    return InvalidKeyValue<KeyT> ();
   }
 
   std::pair<KeyT, ValueT>
