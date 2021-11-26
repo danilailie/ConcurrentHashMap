@@ -98,7 +98,7 @@ public:
 	    return aKey;
 	  }
       }
-    return -1;
+    return InvalidKeyValue<KeyT> ();
   }
 
   KeyT

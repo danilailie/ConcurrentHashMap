@@ -111,7 +111,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::end ()
 {
-  return RAIterator (-1, this);
+  return RAIterator (InvalidKeyValue<KeyT> (), this);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
