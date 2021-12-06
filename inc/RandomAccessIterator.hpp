@@ -45,12 +45,12 @@ private:
   using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
   using FWIterator = ForwardIteratorType<KeyT, ValueT, HashFuncT>;
 
-  RandomAccessIteratorType (KeyT aKey, Map *aMap) : key (aKey), map (aMap)
+  RandomAccessIteratorType (KeyT aKey, Map const *const aMap) : key (aKey), map (aMap)
   {
   }
 
   KeyT key;
-  Map *map;
+  const Map *map;
 
   friend Map;
   friend FWIterator;

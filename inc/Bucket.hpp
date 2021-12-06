@@ -20,7 +20,7 @@ public:
   }
 
   std::size_t
-  getSize ()
+  getSize () const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
     return currentSize;
@@ -41,7 +41,7 @@ public:
   }
 
   KeyT
-  getKeyAt (std::size_t index)
+  getKeyAt (std::size_t index) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
     return values[index].getKey ();
@@ -53,7 +53,7 @@ public:
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
 
     int foundPosition = -1;
-    for (std::size_t i = 0; i < values.size (); ++i)
+    for (int i = 0; i < values.size (); ++i)
       {
 	if (values[i].getKey () == aKey)
 	  {
