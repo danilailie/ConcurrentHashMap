@@ -37,6 +37,16 @@ main ()
       }
   };
 
+  auto traverseFunc = [&myMap] () {
+    std::size_t valueCount = 0;
+    for (auto it = myMap.begin (); it != myMap.end (); ++it)
+      {
+	++valueCount;
+      }
+
+    std::cout << "\nTraversed " << valueCount << " values.\n";
+  };
+
   std::vector<std::thread> workers;
   const int tenK = 10000;
 
@@ -59,6 +69,10 @@ main ()
 	    << " milliseconds\n";
 
   workers.clear ();
+
+  auto rehashThread = std::thread ([&myMap] () { myMap.rehash (); });
+  rehashThread.join ();
+
   auto startTimeFind = std::chrono::steady_clock::now ();
 
   for (auto i = 0; i < 10; ++i)
@@ -78,6 +92,9 @@ main ()
 	    << " milliseconds\n";
 
   workers.clear ();
+
+  auto traverseThread = std::thread ([traverseFunc] () { traverseFunc (); });
+
   auto startTimeErase = std::chrono::steady_clock::now ();
 
   for (auto i = 0; i < 10; ++i)
@@ -91,6 +108,8 @@ main ()
     }
 
   auto endTimeErase = std::chrono::steady_clock::now ();
+
+  traverseThread.join ();
 
   std::cout << "\nConcurrent Hash Map - Erase Duration: "
 	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimeErase - startTimeErase).count ()

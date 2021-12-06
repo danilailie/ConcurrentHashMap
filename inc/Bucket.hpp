@@ -4,6 +4,7 @@
 #include <shared_mutex>
 #include <vector>
 
+#include "HashMapUtils.hpp"
 #include "InternalValue.hpp"
 
 template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
@@ -51,8 +52,8 @@ public:
   {
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
 
-    std::size_t foundPosition = -1;
-    for (auto i = 0; i < values.size (); ++i)
+    int foundPosition = -1;
+    for (std::size_t i = 0; i < values.size (); ++i)
       {
 	if (values[i].getKey () == aKey)
 	  {
@@ -87,24 +88,24 @@ public:
   }
 
   KeyT
-  find (const KeyT &aKey)
+  find (const KeyT &aKey) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (auto i = 0; i < values.size (); ++i)
+    for (std::size_t i = 0; i < values.size (); ++i)
       {
 	if (values[i].compareKey (aKey))
 	  {
 	    return aKey;
 	  }
       }
-    return -1;
+    return InvalidKeyValue<KeyT> ();
   }
 
   KeyT
   erase (const KeyT &aKey)
   {
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
-    for (auto i = 0; i < values.size (); ++i)
+    for (std::size_t i = 0; i < values.size (); ++i)
       {
 	if (values[i].compareKey (aKey))
 	  {
@@ -113,14 +114,14 @@ public:
 	    return aKey;
 	  }
       }
-    return -1;
+    return InvalidKeyValue<KeyT> ();
   }
 
   std::pair<KeyT, ValueT>
   getKeyValuePair (const KeyT &aKey)
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (auto i = 0; i < values.size (); ++i)
+    for (std::size_t i = 0; i < values.size (); ++i)
       {
 	if (values[i].compareKey (aKey))
 	  {
@@ -134,7 +135,7 @@ public:
   getFirstValueIndex () const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (auto i = 0; i < values.size (); ++i)
+    for (std::size_t i = 0; i < values.size (); ++i)
       {
 	if (values[i].isAvailable ())
 	  {
@@ -166,7 +167,7 @@ private:
     std::vector<InternalValue> newValues;
     std::size_t count = 0;
 
-    for (auto i = 0; i < values.size (); ++i)
+    for (std::size_t i = 0; i < values.size (); ++i)
       {
 	if (values[i].isAvailable ())
 	  {
