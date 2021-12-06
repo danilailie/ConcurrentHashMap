@@ -13,20 +13,6 @@
 #include "InternalValue.hpp"
 #include "RandomAccessIterator.hpp"
 
-std::size_t
-getNextPrimeNumber (const std::size_t &aValue)
-{
-  std::vector<std::size_t> primes = { 2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37,	 41,	43,
-				      47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 10007, 20021, 40063 };
-  for (std::size_t i = 0; i < primes.size (); ++i)
-    {
-      if (primes[i] > aValue)
-	{
-	  return primes[i];
-	}
-    }
-  return 10007;
-}
 template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class ConcurrentHashMap
 {
 public:
@@ -45,7 +31,7 @@ public:
   std::pair<RAIterator, bool> insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair);
   std::pair<RAIterator, bool> insert (const KeyT &aKey, const ValueT &aValue);
 
-  RAIterator find (const KeyT &aKey);
+  RAIterator find (const KeyT &aKey) const;
 
   RAIterator erase (const RAIterator &anIterator);
 
@@ -140,12 +126,13 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const Valu
 
 template <class KeyT, class ValueT, class HashFuncT>
 typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey)
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
 
-  return RAIterator (buckets[bucketIndex].find (aKey), this);
+  auto key = buckets[bucketIndex].find (aKey);
+  return RAIterator (key, this);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>

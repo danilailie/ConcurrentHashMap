@@ -95,14 +95,17 @@ public:
   }
 
 private:
-  ForwardIteratorType (const KeyT &aKey, Map *aMap, std::size_t aBucketIndex, std::size_t aValueIndex)
-      : key (aKey), map (aMap), bucketIndex (aBucketIndex), valueIndex (aValueIndex)
+  ForwardIteratorType (const KeyT &aKey, Map *const aMap, std::size_t aBucketIndex, std::size_t aValueIndex)
   {
-    instances[aMap]++;
+    key = aKey;
+    map = aMap;
+    bucketIndex = aBucketIndex;
+    valueIndex = aValueIndex;
 
-    if (instances[aMap] == 1)
+    instances[map]++;
+    if (instances[map] == 1)
       {
-	locks.insert (std::make_pair (aMap, std::shared_lock<std::shared_mutex> (aMap->rehashMutex)));
+	locks.insert (std::make_pair (map, std::shared_lock<std::shared_mutex> (map->rehashMutex)));
       }
   }
 

@@ -45,7 +45,7 @@ private:
   using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
   using FWIterator = ForwardIteratorType<KeyT, ValueT, HashFuncT>;
 
-  RandomAccessIteratorType (KeyT aKey, Map *aMap) : key (aKey), map (aMap)
+  RandomAccessIteratorType (KeyT aKey, Map *const aMap) : key (aKey), map (aMap)
   {
   }
 
