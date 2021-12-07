@@ -53,7 +53,7 @@ public:
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
 
     int foundPosition = -1;
-    for (int i = 0; i < values.size (); ++i)
+    for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].getKey () == aKey)
 	  {
@@ -118,7 +118,7 @@ public:
   }
 
   std::pair<KeyT, ValueT>
-  getKeyValuePair (const KeyT &aKey)
+  getKeyValuePair (const KeyT &aKey) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
     for (std::size_t i = 0; i < values.size (); ++i)
@@ -146,7 +146,7 @@ public:
   }
 
   std::size_t
-  getNextValueIndex (std::size_t index)
+  getNextValueIndex (std::size_t index) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
     for (auto i = index + 1; i < values.size (); ++i)

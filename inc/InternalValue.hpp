@@ -31,7 +31,7 @@ public:
   }
 
   std::pair<KeyT, ValueT>
-  getKeyValuePair ()
+  getKeyValuePair () const
   {
     std::shared_lock<std::shared_mutex> lock (*valueMutex);
     return std::make_pair (key, userValue);
