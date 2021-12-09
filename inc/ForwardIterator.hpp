@@ -1,14 +1,11 @@
 #ifndef _FORWARD_ITERATOR_HPP_
 #define _FORWARD_ITERATOR_HPP_
 
-#include "RandomAccessIterator.hpp"
-
 template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
 
 template <class KeyT, class ValueT, class HashFuncT> class ForwardIteratorType
 {
 public:
-  using RAIterator = RandomAccessIteratorType<KeyT, ValueT, HashFuncT>;
   using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
 
   ForwardIteratorType (const ForwardIteratorType &other)
@@ -53,19 +50,7 @@ public:
   }
 
   bool
-  operator== (const RAIterator &another)
-  {
-    return map == another.map && key == another.key;
-  }
-
-  bool
   operator!= (const ForwardIteratorType &other)
-  {
-    return map != other.map || key != other.key;
-  }
-
-  bool
-  operator!= (const RAIterator &other)
   {
     return map != other.map || key != other.key;
   }
@@ -93,11 +78,7 @@ private:
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
 
-    instances[map]++;
-    if (instances[map] == 1)
-      {
-	locks.insert (std::make_pair (map, std::shared_lock<std::shared_mutex> (map->rehashMutex)));
-      }
+    increaseInstances ();
   }
 
   void
