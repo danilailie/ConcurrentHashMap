@@ -16,6 +16,7 @@ template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class Con
 {
 public:
   using iterator = ForwardIteratorType<KeyT, ValueT, HashFuncT>;
+  using const_iterator = const ForwardIteratorType<KeyT, ValueT, HashFuncT>;
 
 public:
   ConcurrentHashMap (std::size_t bucketCount = 31);
@@ -23,8 +24,18 @@ public:
   std::size_t getSize () const;
 
   iterator begin () const;
+  const_iterator
+  cbegin () const
+  {
+    return begin ();
+  };
 
   iterator end () const;
+  const_iterator
+  cend () const
+  {
+    return end ();
+  }
 
   std::pair<iterator, bool> insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair);
   std::pair<iterator, bool> insert (const KeyT &aKey, const ValueT &aValue);
