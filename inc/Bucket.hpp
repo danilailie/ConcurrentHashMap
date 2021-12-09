@@ -47,12 +47,13 @@ public:
     return values[index].getKey ();
   }
 
-  bool
+  int
   insert (const KeyT &aKey, const ValueT &aValue)
   {
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
 
     int foundPosition = -1;
+    int insertPosition = -1;
     for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].getKey () == aKey)
@@ -65,29 +66,26 @@ public:
       {
 	values.push_back (InternalValue (aKey, aValue));
 	++currentSize;
+	insertPosition = values.size () - 1;
       }
     else
       {
 	if (!values[foundPosition].isAvailable ())
 	  {
 	    values[foundPosition].setAvailable ();
-	  }
-	else
-	  {
-	    return false;
+	    insertPosition = foundPosition;
 	  }
       }
-
-    return true;
+    return insertPosition;
   }
 
-  void
+  int
   insert (const std::pair<KeyT, ValueT> &aKeyValuePair)
   {
-    insert (aKeyValuePair.first, aKeyValuePair.second);
+    return insert (aKeyValuePair.first, aKeyValuePair.second);
   }
 
-  KeyT
+  int
   find (const KeyT &aKey) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
@@ -95,13 +93,13 @@ public:
       {
 	if (values[i].compareKey (aKey))
 	  {
-	    return aKey;
+	    return i;
 	  }
       }
-    return InvalidKeyValue<KeyT> ();
+    return -1;
   }
 
-  KeyT
+  int
   erase (const KeyT &aKey)
   {
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
@@ -111,10 +109,10 @@ public:
 	  {
 	    values[i].erase ();
 	    --currentSize;
-	    return aKey;
+	    return i;
 	  }
       }
-    return InvalidKeyValue<KeyT> ();
+    return -1;
   }
 
   std::pair<KeyT, ValueT>

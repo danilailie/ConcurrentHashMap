@@ -16,22 +16,13 @@ public:
     map = other.map;
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
-    instances[map]++;
-    if (instances[map] == 1)
-      {
-	locks.insert (std::make_pair (map, std::shared_lock<std::shared_mutex> (map->rehashMutex)));
-      }
+
+    increaseInstances ();
   }
 
   ~ForwardIteratorType ()
   {
-    instances[map]--;
-
-    if (instances[map] == 0)
-      {
-	instances.erase (map);
-	locks.erase (map);
-      }
+    decreaseInstances ();
   }
 
   ForwardIteratorType &
@@ -109,6 +100,29 @@ private:
       }
   }
 
+  void
+  increaseInstances ()
+  {
+    std::unique_lock<std::mutex> lock (instancesMutex);
+    instances[map]++;
+    if (instances[map] == 1)
+      {
+	locks.insert (std::make_pair (map, std::shared_lock<std::shared_mutex> (map->rehashMutex)));
+      }
+  }
+
+  void
+  decreaseInstances ()
+  {
+    std::unique_lock<std::mutex> lock (instancesMutex);
+    instances[map]--;
+    if (instances[map] == 0)
+      {
+	instances.erase (map);
+	locks.erase (map);
+      }
+  }
+
 private:
   KeyT key; // used for compare between iterator types.
   const Map *map;
@@ -117,6 +131,7 @@ private:
 
   static std::unordered_map<const Map *, std::size_t> instances;
   static std::unordered_map<const Map *, std::shared_lock<std::shared_mutex>> locks;
+  static std::mutex instancesMutex;
 
   friend Map;
 };
@@ -128,5 +143,8 @@ std::unordered_map<const ConcurrentHashMap<KeyT, ValueT, HashFuncT> *, std::size
 template <class KeyT, class ValueT, class HashFuncT>
 std::unordered_map<const ConcurrentHashMap<KeyT, ValueT, HashFuncT> *, std::shared_lock<std::shared_mutex>>
   ForwardIteratorType<KeyT, ValueT, HashFuncT>::locks;
+
+template <class KeyT, class ValueT, class HashFuncT>
+std::mutex ForwardIteratorType<KeyT, ValueT, HashFuncT>::instancesMutex;
 
 #endif

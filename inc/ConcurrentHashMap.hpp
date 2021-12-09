@@ -26,16 +26,16 @@ public:
 
   FWIterator begin () const;
 
-  RAIterator end () const;
+  FWIterator end () const;
 
-  std::pair<RAIterator, bool> insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair);
-  std::pair<RAIterator, bool> insert (const KeyT &aKey, const ValueT &aValue);
+  std::pair<FWIterator, bool> insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair);
+  std::pair<FWIterator, bool> insert (const KeyT &aKey, const ValueT &aValue);
 
-  RAIterator find (const KeyT &aKey) const;
+  FWIterator find (const KeyT &aKey) const;
 
-  RAIterator erase (const RAIterator &anIterator);
+  FWIterator erase (const RAIterator &anIterator);
 
-  RAIterator erase (const KeyT &aKey);
+  FWIterator erase (const KeyT &aKey);
 
   void rehash ();
 
@@ -94,66 +94,73 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin () const
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::FWIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::end () const
 {
-  return RAIterator (InvalidKeyValue<KeyT> (), this);
+  return FWIterator (InvalidKeyValue<KeyT> (), this, -1, -1);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::pair<typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator, bool>
+std::pair<typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::FWIterator, bool>
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair)
 {
   return insert (aKeyValuePair.first, aKeyValuePair.second);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::pair<typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator, bool>
+std::pair<typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::FWIterator, bool>
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const ValueT &aValue)
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
 
   bool added = false;
-  if (buckets[bucketIndex].insert (aKey, aValue))
+  int position = buckets[bucketIndex].insert (aKey, aValue);
+  if (position != -1)
     {
       valueCount++;
       added = true;
     }
 
-  return std::make_pair (ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator (aKey, this), added);
+  return std::make_pair (ConcurrentHashMap<KeyT, ValueT, HashFuncT>::FWIterator (aKey, this, bucketIndex, position),
+			 added);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::FWIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
 
-  auto key = buckets[bucketIndex].find (aKey);
-  return RAIterator (key, this);
+  auto position = buckets[bucketIndex].find (aKey);
+  if (position != -1)
+    {
+      return FWIterator (aKey, this, bucketIndex, position);
+    }
+  return end ();
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::FWIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const RAIterator &anIterator)
 {
   return erase (anIterator.getKey ());
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::RAIterator
+typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::FWIterator
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 {
-  std::unique_lock<std::shared_mutex> lock (rehashMutex);
+  // TODO: Ilie check this.
+  // std::unique_lock<std::shared_mutex> lock (rehashMutex);
 
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
 
-  KeyT key = buckets[bucketIndex].erase (aKey);
+  int position = buckets[bucketIndex].erase (aKey);
 
-  if (key != InvalidKeyValue<KeyT> ())
+  if (position != -1)
     {
       erasedCount++;
     }
@@ -163,7 +170,11 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
       eraseUnavailableValues ();
     }
 
-  return RAIterator (key, this);
+  if (position != -1)
+    {
+      return FWIterator (aKey, this, bucketIndex, position);
+    }
+  return end ();
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -244,12 +255,16 @@ template <class KeyT, class ValueT, class HashFuncT>
 void
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::eraseUnavailableValues ()
 {
-  valueCount = 0;
-  for (std::size_t i = 0; i < buckets.size (); ++i)
+  if (rehashMutex.try_lock ())
     {
-      valueCount += buckets[i].eraseUnavailableValues ();
+      valueCount = 0;
+      for (std::size_t i = 0; i < buckets.size (); ++i)
+	{
+	  valueCount += buckets[i].eraseUnavailableValues ();
+	}
+      erasedCount = 0;
+      rehashMutex.unlock ();
     }
-  erasedCount = 0;
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
