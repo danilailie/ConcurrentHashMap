@@ -24,7 +24,7 @@ public:
 
   std::size_t getSize () const;
 
-  FWIterator begin ();
+  FWIterator begin () const;
 
   FWIterator end () const;
 
@@ -44,17 +44,17 @@ private:
   using BucketType = Bucket<KeyT, ValueT, HashFuncT>;
 
 private:
-  std::pair<KeyT, ValueT> getIterValue (const KeyT &aKey);
-  std::pair<KeyT, ValueT> getIterValue (const FWIterator &anIter);
-  std::size_t getNextPopulatedBucketIndex (std::size_t anIndex);
-  KeyT getFirstKey ();
-  KeyT getNextElement (std::size_t &bucketIndex, std::size_t &valueIndex);
+  std::pair<KeyT, ValueT> getIterValue (const KeyT &aKey) const;
+  std::pair<KeyT, ValueT> getIterValue (const FWIterator &anIter) const;
+  std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
+  KeyT getFirstKey () const;
+  KeyT getNextElement (std::size_t &bucketIndex, std::size_t &valueIndex) const;
   void eraseUnavailableValues ();
 
 private:
   HashFuncT hashFunc;
   std::vector<BucketType> buckets;
-  std::shared_mutex rehashMutex;
+  mutable std::shared_mutex rehashMutex;
   std::size_t currentBucketCount;
   std::atomic<std::size_t> valueCount;
   std::atomic<std::size_t> erasedCount;
@@ -79,7 +79,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getSize () const
 
 template <class KeyT, class ValueT, class HashFuncT>
 typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::FWIterator
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin ()
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin () const
 {
   for (std::size_t i = 0; i < buckets.size (); ++i)
     {
@@ -179,7 +179,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::pair<KeyT, ValueT>
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey)
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey) const
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
@@ -189,7 +189,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey)
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::pair<KeyT, ValueT>
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const FWIterator &anIter)
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const FWIterator &anIter) const
 {
   return std::make_pair (buckets[anIter.bucketIndex].values[anIter.valueIndex].key,
 			 buckets[anIter.bucketIndex].values[anIter.valueIndex].userValue);
@@ -197,7 +197,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const FWIterator &anIt
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::size_t
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextPopulatedBucketIndex (std::size_t anIndex)
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextPopulatedBucketIndex (std::size_t anIndex) const
 {
   for (auto i = anIndex + 1; i < buckets.size (); ++i)
     {
@@ -211,7 +211,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextPopulatedBucketIndex (std::si
 
 template <class KeyT, class ValueT, class HashFuncT>
 KeyT
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getFirstKey ()
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getFirstKey () const
 {
   for (auto i = 0; i < buckets.size (); ++i)
     {
@@ -226,7 +226,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getFirstKey ()
 
 template <class KeyT, class ValueT, class HashFuncT>
 KeyT
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketIndex, std::size_t &valueIndex)
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketIndex, std::size_t &valueIndex) const
 {
   int nextValueIndex = buckets[bucketIndex].getNextValueIndex (valueIndex);
 

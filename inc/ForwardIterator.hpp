@@ -95,7 +95,7 @@ public:
   }
 
 private:
-  ForwardIteratorType (const KeyT &aKey, Map *const aMap, std::size_t aBucketIndex, std::size_t aValueIndex)
+  ForwardIteratorType (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, std::size_t aValueIndex)
   {
     key = aKey;
     map = aMap;
@@ -111,22 +111,22 @@ private:
 
 private:
   KeyT key; // used for compare between iterator types.
-  Map *map;
+  const Map *map;
   std::size_t bucketIndex;
   std::size_t valueIndex;
 
-  static std::unordered_map<Map *, std::size_t> instances;
-  static std::unordered_map<Map *, std::shared_lock<std::shared_mutex>> locks;
+  static std::unordered_map<const Map *, std::size_t> instances;
+  static std::unordered_map<const Map *, std::shared_lock<std::shared_mutex>> locks;
 
   friend Map;
 };
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::unordered_map<ConcurrentHashMap<KeyT, ValueT, HashFuncT> *, std::size_t>
+std::unordered_map<const ConcurrentHashMap<KeyT, ValueT, HashFuncT> *, std::size_t>
   ForwardIteratorType<KeyT, ValueT, HashFuncT>::instances;
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::unordered_map<ConcurrentHashMap<KeyT, ValueT, HashFuncT> *, std::shared_lock<std::shared_mutex>>
+std::unordered_map<const ConcurrentHashMap<KeyT, ValueT, HashFuncT> *, std::shared_lock<std::shared_mutex>>
   ForwardIteratorType<KeyT, ValueT, HashFuncT>::locks;
 
 #endif
