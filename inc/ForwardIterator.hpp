@@ -37,7 +37,7 @@ public:
     return *this;
   }
 
-  std::pair<KeyT, ValueT>
+  std::pair<KeyT, ValueT> &
   operator* ()
   {
     return map->getIterValue (*this);
