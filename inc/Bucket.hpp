@@ -66,7 +66,7 @@ public:
       {
 	values.push_back (InternalValue (aKey, aValue));
 	++currentSize;
-	insertPosition = values.size () - 1;
+	insertPosition = int (values.size ()) - 1;
       }
     else
       {
@@ -89,7 +89,7 @@ public:
   find (const KeyT &aKey) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (std::size_t i = 0; i < values.size (); ++i)
+    for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].compareKey (aKey))
 	  {
@@ -103,7 +103,7 @@ public:
   erase (const KeyT &aKey)
   {
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
-    for (std::size_t i = 0; i < values.size (); ++i)
+    for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].compareKey (aKey))
 	  {
@@ -129,25 +129,25 @@ public:
     return std::pair<KeyT, ValueT> ();
   }
 
-  std::size_t
+  int
   getFirstValueIndex () const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (std::size_t i = 0; i < values.size (); ++i)
+    for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].isAvailable ())
 	  {
 	    return i;
 	  }
       }
-    return values.size ();
+    return int (values.size ());
   }
 
-  std::size_t
-  getNextValueIndex (std::size_t index) const
+  int
+  getNextValueIndex (int index) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (auto i = index + 1; i < values.size (); ++i)
+    for (int i = index + 1; i < int (values.size ()); ++i)
       {
 	if (values[i].isAvailable ())
 	  {

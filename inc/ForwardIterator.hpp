@@ -37,7 +37,7 @@ public:
     return *this;
   }
 
-  std::pair<KeyT, ValueT>
+  std::pair<KeyT, ValueT> &
   operator* ()
   {
     return map->getIterValue (*this);
@@ -71,7 +71,7 @@ public:
   }
 
 private:
-  ForwardIteratorType (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, std::size_t aValueIndex)
+  ForwardIteratorType (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex)
   {
     key = aKey;
     map = aMap;
@@ -108,7 +108,7 @@ private:
   KeyT key; // used for compare between iterator types.
   const Map *map;
   std::size_t bucketIndex;
-  std::size_t valueIndex;
+  int valueIndex;
 
   static std::unordered_map<const Map *, std::size_t> instances;
   static std::unordered_map<const Map *, std::shared_lock<std::shared_mutex>> locks;

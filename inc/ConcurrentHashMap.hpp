@@ -16,6 +16,7 @@ template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class Con
 {
 public:
   using iterator = ForwardIteratorType<KeyT, ValueT, HashFuncT>;
+  using const_iterator = const ForwardIteratorType<KeyT, ValueT, HashFuncT>;
 
 public:
   ConcurrentHashMap (std::size_t bucketCount = 31);
@@ -23,8 +24,18 @@ public:
   std::size_t getSize () const;
 
   iterator begin () const;
+  const_iterator
+  cbegin () const
+  {
+    return begin ();
+  };
 
   iterator end () const;
+  const_iterator
+  cend () const
+  {
+    return end ();
+  }
 
   std::pair<iterator, bool> insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair);
   std::pair<iterator, bool> insert (const KeyT &aKey, const ValueT &aValue);
@@ -42,11 +53,11 @@ private:
   using BucketType = Bucket<KeyT, ValueT, HashFuncT>;
 
 private:
-  std::pair<KeyT, ValueT> getIterValue (const KeyT &aKey) const;
-  std::pair<KeyT, ValueT> getIterValue (const iterator &anIter) const;
+  std::pair<KeyT, ValueT> &getIterValue (const KeyT &aKey) const;
+  std::pair<KeyT, ValueT> &getIterValue (const iterator &anIter) const;
   std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
   KeyT getFirstKey () const;
-  KeyT getNextElement (std::size_t &bucketIndex, std::size_t &valueIndex) const;
+  KeyT getNextElement (std::size_t &bucketIndex, int &valueIndex) const;
   void eraseUnavailableValues ();
 
 private:
@@ -175,7 +186,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::pair<KeyT, ValueT>
+std::pair<KeyT, ValueT> &
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey) const
 {
   auto hashResult = hashFunc (aKey);
@@ -185,11 +196,11 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey) cons
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::pair<KeyT, ValueT>
+std::pair<KeyT, ValueT> &
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const iterator &anIter) const
 {
-  return std::make_pair (buckets[anIter.bucketIndex].values[anIter.valueIndex].key,
-			 buckets[anIter.bucketIndex].values[anIter.valueIndex].userValue);
+  const std::pair<KeyT, ValueT> *keyValue = &(buckets[anIter.bucketIndex].values[anIter.valueIndex].keyValue);
+  return const_cast<std::pair<KeyT, ValueT> &> (*keyValue);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -223,13 +234,13 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getFirstKey () const
 
 template <class KeyT, class ValueT, class HashFuncT>
 KeyT
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketIndex, std::size_t &valueIndex) const
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketIndex, int &valueIndex) const
 {
   int nextValueIndex = buckets[bucketIndex].getNextValueIndex (valueIndex);
 
   if (nextValueIndex == -1)
     {
-      int nextBucketIndex = getNextPopulatedBucketIndex (bucketIndex);
+      int nextBucketIndex = int (getNextPopulatedBucketIndex (bucketIndex));
       if (nextBucketIndex == -1)
 	{
 	  return InvalidKeyValue<KeyT> ();
@@ -281,7 +292,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::rehash ()
 	{
 	  if (buckets[i].values[j].isAvailable ())
 	    {
-	      auto hashResult = hashFunc (buckets[i].values[j].key);
+	      auto hashResult = hashFunc (buckets[i].values[j].keyValue.first);
 	      auto bucketIndex = hashResult % currentBucketCount;
 	      newBuckets[bucketIndex].insert (buckets[i].values[j].getKeyValuePair ());
 	    }
