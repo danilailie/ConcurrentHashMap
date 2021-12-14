@@ -42,9 +42,9 @@ public:
 
   iterator find (const KeyT &aKey) const;
 
-  iterator erase (const iterator &anIterator);
+  bool erase (const iterator &anIterator);
 
-  iterator erase (const KeyT &aKey);
+  bool erase (const KeyT &aKey);
 
   void rehash ();
 
@@ -151,14 +151,14 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::iterator
+bool
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const iterator &anIterator)
 {
   return erase (anIterator.getKey ());
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::iterator
+bool
 ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 {
   // TODO: Ilie check this.
@@ -181,9 +181,9 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 
   if (position != -1)
     {
-      return iterator (aKey, this, bucketIndex, position);
+      return true;
     }
-  return end ();
+  return false;
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
