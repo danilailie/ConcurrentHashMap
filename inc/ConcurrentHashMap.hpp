@@ -9,7 +9,6 @@
 
 #include "Bucket.hpp"
 #include "ForwardIterator.hpp"
-#include "HashMapUtils.hpp"
 #include "InternalValue.hpp"
 
 template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class ConcurrentHashMap
@@ -60,6 +59,20 @@ private:
   KeyT getFirstKey () const;
   KeyT getNextElement (std::size_t &bucketIndex, int &valueIndex) const;
   void eraseUnavailableValues ();
+
+  std::size_t
+  getNextPrimeNumber (const std::size_t &aValue)
+  {
+    std::vector<std::size_t> primes = { 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 10007, 20021, 40063 };
+    for (std::size_t i = 0; i < primes.size (); ++i)
+      {
+	if (primes[i] > aValue)
+	  {
+	    return primes[i];
+	  }
+      }
+    return 10007;
+  }
 
 private:
   HashFuncT hashFunc;
