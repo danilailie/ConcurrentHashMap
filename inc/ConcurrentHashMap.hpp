@@ -55,6 +55,7 @@ private:
 private:
   std::pair<KeyT, ValueT> &getIterValue (const KeyT &aKey) const;
   std::pair<KeyT, ValueT> &getIterValue (const iterator &anIter) const;
+  std::pair<KeyT, ValueT> *getIterPtr (const iterator &anIter) const;
   std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
   KeyT getFirstKey () const;
   KeyT getNextElement (std::size_t &bucketIndex, int &valueIndex) const;
@@ -201,6 +202,14 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const iterator &anIter
 {
   const std::pair<KeyT, ValueT> *keyValue = &(buckets[anIter.bucketIndex].values[anIter.valueIndex].keyValue);
   return const_cast<std::pair<KeyT, ValueT> &> (*keyValue);
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+std::pair<KeyT, ValueT> *
+ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterPtr (const iterator &anIter) const
+{
+  const std::pair<KeyT, ValueT> *keyValue = &(buckets[anIter.bucketIndex].values[anIter.valueIndex].keyValue);
+  return const_cast<std::pair<KeyT, ValueT> *> (keyValue);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>

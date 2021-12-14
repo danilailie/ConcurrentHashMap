@@ -43,6 +43,12 @@ public:
     return map->getIterValue (*this);
   }
 
+  std::pair<KeyT, ValueT> *
+  operator-> ()
+  {
+    return map->getIterPtr (*this);
+  }
+
   bool
   operator== (const ForwardIteratorType &another)
   {
