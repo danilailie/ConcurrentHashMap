@@ -33,7 +33,7 @@ main ()
     for (auto i = left; i < right; ++i)
       {
 	auto it = myMap.erase (i);
-	assert (it != myMap.end ());
+	assert (it);
       }
   };
 
@@ -115,7 +115,7 @@ main ()
 	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTimeErase - startTimeErase).count ()
 	    << " milliseconds\n";
 
-  assert (myMap.erase (0) == myMap.end ());
+  assert (myMap.erase (0) == false);
 
   std::cout << "\nConcurrent Hash Map - Size: " << myMap.getSize () << '\n';
 
