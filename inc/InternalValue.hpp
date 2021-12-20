@@ -3,17 +3,17 @@
 
 #include <shared_mutex>
 
-template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
+template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 
-template <class KeyT, class ValueT, class HashFuncT> class InternalValueType
+template <class KeyT, class ValueT, class HashFuncT> class internal_value
 {
 public:
-  InternalValueType (const KeyT &aKey, const ValueT &aValue) : isMarkedForDelete (false), keyValue (aKey, aValue)
+  internal_value (const KeyT &aKey, const ValueT &aValue) : isMarkedForDelete (false), keyValue (aKey, aValue)
   {
     valueMutex = std::make_unique<std::shared_mutex> ();
   }
 
-  InternalValueType (const std::pair<KeyT, ValueT> &aKeyValuePair)
+  internal_value (const std::pair<KeyT, ValueT> &aKeyValuePair)
       : isMarkedForDelete (false), keyValue (aKeyValuePair.first, aKeyValuePair.second)
   {
     valueMutex = std::make_unique<std::shared_mutex> ();
@@ -66,7 +66,7 @@ public:
   }
 
 private:
-  using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
 
   std::unique_ptr<std::shared_mutex> valueMutex;
   bool isMarkedForDelete;

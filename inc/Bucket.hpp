@@ -7,14 +7,14 @@
 #include "HashMapUtils.hpp"
 #include "InternalValue.hpp"
 
-template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
+template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 
-template <class KeyT, class ValueT, class HashFuncT> class Bucket
+template <class KeyT, class ValueT, class HashFuncT> class bucket
 {
 public:
-  using InternalValue = InternalValueType<KeyT, ValueT, HashFuncT>;
+  using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
 
-  Bucket ()
+  bucket ()
   {
     bucketMutex = std::make_unique<std::shared_mutex> ();
   }
@@ -178,7 +178,7 @@ private:
   }
 
 private:
-  using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
 
   std::unique_ptr<std::shared_mutex> bucketMutex;
   std::vector<InternalValue> values;

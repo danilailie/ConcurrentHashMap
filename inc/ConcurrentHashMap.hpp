@@ -11,14 +11,14 @@
 #include "ForwardIterator.hpp"
 #include "InternalValue.hpp"
 
-template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class ConcurrentHashMap
+template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class concurrent_unordered_map
 {
 public:
-  using iterator = ForwardIteratorType<KeyT, ValueT, HashFuncT>;
-  using const_iterator = const ForwardIteratorType<KeyT, ValueT, HashFuncT>;
+  using iterator = forward_iterator<KeyT, ValueT, HashFuncT>;
+  using const_iterator = const forward_iterator<KeyT, ValueT, HashFuncT>;
 
 public:
-  ConcurrentHashMap (std::size_t bucketCount = 31);
+  concurrent_unordered_map (std::size_t bucketCount = 31);
 
   std::size_t getSize () const;
 
@@ -48,8 +48,8 @@ public:
   void rehash ();
 
 private:
-  using InternalValue = InternalValueType<KeyT, ValueT, HashFuncT>;
-  using BucketType = Bucket<KeyT, ValueT, HashFuncT>;
+  using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
+  using BucketType = bucket<KeyT, ValueT, HashFuncT>;
 
 private:
   std::pair<KeyT, ValueT> &getIterValue (const KeyT &aKey) const;
@@ -86,7 +86,7 @@ private:
 };
 
 template <class KeyT, class ValueT, class HashFuncT>
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::ConcurrentHashMap (std::size_t bucketCount)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::concurrent_unordered_map (std::size_t bucketCount)
 {
   buckets.resize (bucketCount);
   currentBucketCount = bucketCount;
@@ -94,14 +94,14 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::ConcurrentHashMap (std::size_t bucke
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::size_t
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getSize () const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getSize () const
 {
   return valueCount - erasedCount;
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::iterator
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin () const
+typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::begin () const
 {
   for (std::size_t i = 0; i < buckets.size (); ++i)
     {
@@ -116,22 +116,22 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::begin () const
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::iterator
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::end () const
+typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::end () const
 {
   return iterator (InvalidKeyValue<KeyT> (), this, -1, -1);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::pair<typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::iterator, bool>
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair)
+std::pair<typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator, bool>
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair)
 {
   return insert (aKeyValuePair.first, aKeyValuePair.second);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::pair<typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::iterator, bool>
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const ValueT &aValue)
+std::pair<typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator, bool>
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const ValueT &aValue)
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
@@ -144,13 +144,14 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const Valu
       added = true;
     }
 
-  return std::make_pair (ConcurrentHashMap<KeyT, ValueT, HashFuncT>::iterator (aKey, this, bucketIndex, position),
+  return std::make_pair (concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator (aKey, this, bucketIndex,
+										      position),
 			 added);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename ConcurrentHashMap<KeyT, ValueT, HashFuncT>::iterator
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
+typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
@@ -165,14 +166,14 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
 
 template <class KeyT, class ValueT, class HashFuncT>
 bool
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const iterator &anIterator)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const iterator &anIterator)
 {
   return erase (anIterator.getKey ());
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
 bool
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 {
   // TODO: Ilie check this.
   // std::unique_lock<std::shared_mutex> lock (rehashMutex);
@@ -201,7 +202,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::pair<KeyT, ValueT> &
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey) const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey) const
 {
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
@@ -211,7 +212,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey) cons
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::pair<KeyT, ValueT> &
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const iterator &anIter) const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterValue (const iterator &anIter) const
 {
   const std::pair<KeyT, ValueT> *keyValue = &(buckets[anIter.bucketIndex].values[anIter.valueIndex].keyValue);
   return const_cast<std::pair<KeyT, ValueT> &> (*keyValue);
@@ -219,7 +220,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterValue (const iterator &anIter
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::pair<KeyT, ValueT> *
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterPtr (const iterator &anIter) const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterPtr (const iterator &anIter) const
 {
   const std::pair<KeyT, ValueT> *keyValue = &(buckets[anIter.bucketIndex].values[anIter.valueIndex].keyValue);
   return const_cast<std::pair<KeyT, ValueT> *> (keyValue);
@@ -227,7 +228,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getIterPtr (const iterator &anIter) 
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::size_t
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextPopulatedBucketIndex (std::size_t anIndex) const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getNextPopulatedBucketIndex (std::size_t anIndex) const
 {
   for (auto i = anIndex + 1; i < buckets.size (); ++i)
     {
@@ -241,7 +242,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextPopulatedBucketIndex (std::si
 
 template <class KeyT, class ValueT, class HashFuncT>
 KeyT
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getFirstKey () const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getFirstKey () const
 {
   for (auto i = 0; i < buckets.size (); ++i)
     {
@@ -256,7 +257,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getFirstKey () const
 
 template <class KeyT, class ValueT, class HashFuncT>
 KeyT
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketIndex, int &valueIndex) const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketIndex, int &valueIndex) const
 {
   int nextValueIndex = buckets[bucketIndex].getNextValueIndex (valueIndex);
 
@@ -283,7 +284,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketI
 
 template <class KeyT, class ValueT, class HashFuncT>
 void
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::eraseUnavailableValues ()
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::eraseUnavailableValues ()
 {
   if (rehashMutex.try_lock ())
     {
@@ -299,7 +300,7 @@ ConcurrentHashMap<KeyT, ValueT, HashFuncT>::eraseUnavailableValues ()
 
 template <class KeyT, class ValueT, class HashFuncT>
 void
-ConcurrentHashMap<KeyT, ValueT, HashFuncT>::rehash ()
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::rehash ()
 {
   std::unique_lock<std::shared_mutex> lock (rehashMutex);
 
