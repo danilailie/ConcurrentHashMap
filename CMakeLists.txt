@@ -7,7 +7,7 @@ project ("ConcurrentHashMap")
 include_directories(inc)
 
 set(SOURCES 
-    src/LargeObject.cpp
+    src/large_object.cpp
     src/main.cpp
 )
 

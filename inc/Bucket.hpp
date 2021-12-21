@@ -4,8 +4,8 @@
 #include <shared_mutex>
 #include <vector>
 
-#include "HashMapUtils.hpp"
-#include "InternalValue.hpp"
+#include "internal_value.hpp"
+#include "unordered_map_utils.hpp"
 
 template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 

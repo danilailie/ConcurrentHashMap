@@ -5,9 +5,9 @@
 #include <thread>
 #include <unordered_map>
 
-#include "ConcurrentHashMap.hpp"
-#include "ForwardIterator.hpp"
-#include "LargeObject.hpp"
+#include "concurrent_unordered_map.hpp"
+#include "forward_iterator.hpp"
+#include "large_object.hpp"
 
 int
 main ()

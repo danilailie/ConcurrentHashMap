@@ -7,9 +7,9 @@
 #include <shared_mutex>
 #include <vector>
 
-#include "Bucket.hpp"
-#include "ForwardIterator.hpp"
-#include "InternalValue.hpp"
+#include "bucket.hpp"
+#include "forward_iterator.hpp"
+#include "internal_value.hpp"
 
 template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class concurrent_unordered_map
 {
