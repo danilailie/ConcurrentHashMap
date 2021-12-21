@@ -271,8 +271,8 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &
       else
 	{
 	  bucketIndex = nextBucketIndex;
-	  valueIndex = buckets[nextBucketIndex].getFirstValueIndex ();
-	  return buckets[nextBucketIndex].getKeyAt (valueIndex);
+	  std::size_t position;
+	  return buckets[nextBucketIndex].getFirstKey (position);
 	}
     }
   else

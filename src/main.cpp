@@ -12,7 +12,7 @@
 int
 main ()
 {
-  ConcurrentHashMap<int, std::shared_ptr<int>> myMap (10007);
+  concurrent_unordered_map<int, std::shared_ptr<int>> myMap (10007);
 
   auto populateFunc = [&myMap] (int left, int right) {
     for (auto i = left; i < right; ++i)

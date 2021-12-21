@@ -27,17 +27,20 @@ public:
   }
 
   KeyT
-  getFirstKey ()
+  getFirstKey (std::size_t &position) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
     for (auto i = 0; i < values.size (); ++i)
       {
 	if (values[i].isAvailable ())
 	  {
+	    position = i;
 	    return values[i].getKey ();
 	  }
       }
-    return -1;
+
+    position = values.size ();
+    return InvalidKeyValue<KeyT> ();
   }
 
   KeyT
