@@ -1,17 +1,14 @@
 #ifndef _FORWARD_ITERATOR_HPP_
 #define _FORWARD_ITERATOR_HPP_
 
-#include "RandomAccessIterator.hpp"
+template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 
-template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
-
-template <class KeyT, class ValueT, class HashFuncT> class ForwardIteratorType
+template <class KeyT, class ValueT, class HashFuncT> class forward_iterator
 {
 public:
-  using RAIterator = RandomAccessIteratorType<KeyT, ValueT, HashFuncT>;
-  using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
 
-  ForwardIteratorType (const ForwardIteratorType &other)
+  forward_iterator (const forward_iterator &other)
   {
     map = other.map;
     bucketIndex = other.bucketIndex;
@@ -20,13 +17,13 @@ public:
     increaseInstances ();
   }
 
-  ~ForwardIteratorType ()
+  ~forward_iterator ()
   {
     decreaseInstances ();
   }
 
-  ForwardIteratorType &
-  operator= (const ForwardIteratorType &other)
+  forward_iterator &
+  operator= (const forward_iterator &other)
   {
     if (this == &other)
       {
@@ -40,64 +37,54 @@ public:
     return *this;
   }
 
-  std::pair<KeyT, ValueT>
+  std::pair<KeyT, ValueT> &
   operator* ()
   {
     return map->getIterValue (*this);
   }
 
+  std::pair<KeyT, ValueT> *
+  operator-> ()
+  {
+    return map->getIterPtr (*this);
+  }
+
   bool
-  operator== (const ForwardIteratorType &another)
+  operator== (const forward_iterator &another)
   {
     return map == another.map && key == another.key;
   }
 
   bool
-  operator== (const RAIterator &another)
-  {
-    return map == another.map && key == another.key;
-  }
-
-  bool
-  operator!= (const ForwardIteratorType &other)
+  operator!= (const forward_iterator &other)
   {
     return map != other.map || key != other.key;
   }
 
-  bool
-  operator!= (const RAIterator &other)
-  {
-    return map != other.map || key != other.key;
-  }
-
-  ForwardIteratorType &
+  forward_iterator &
   operator++ ()
   {
     key = map->getNextElement (bucketIndex, valueIndex);
     return *this;
   }
 
-  ForwardIteratorType &
+  forward_iterator &
   operator++ (int)
   {
-    ForwardIteratorType tmp = *this;
+    forward_iterator tmp = *this;
     ++(*this);
     return tmp;
   }
 
 private:
-  ForwardIteratorType (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, std::size_t aValueIndex)
+  forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex)
   {
     key = aKey;
     map = aMap;
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
 
-    instances[map]++;
-    if (instances[map] == 1)
-      {
-	locks.insert (std::make_pair (map, std::shared_lock<std::shared_mutex> (map->rehashMutex)));
-      }
+    increaseInstances ();
   }
 
   void
@@ -127,7 +114,7 @@ private:
   KeyT key; // used for compare between iterator types.
   const Map *map;
   std::size_t bucketIndex;
-  std::size_t valueIndex;
+  int valueIndex;
 
   static std::unordered_map<const Map *, std::size_t> instances;
   static std::unordered_map<const Map *, std::shared_lock<std::shared_mutex>> locks;
@@ -137,14 +124,14 @@ private:
 };
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::unordered_map<const ConcurrentHashMap<KeyT, ValueT, HashFuncT> *, std::size_t>
-  ForwardIteratorType<KeyT, ValueT, HashFuncT>::instances;
+std::unordered_map<const concurrent_unordered_map<KeyT, ValueT, HashFuncT> *, std::size_t>
+  forward_iterator<KeyT, ValueT, HashFuncT>::instances;
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::unordered_map<const ConcurrentHashMap<KeyT, ValueT, HashFuncT> *, std::shared_lock<std::shared_mutex>>
-  ForwardIteratorType<KeyT, ValueT, HashFuncT>::locks;
+std::unordered_map<const concurrent_unordered_map<KeyT, ValueT, HashFuncT> *, std::shared_lock<std::shared_mutex>>
+  forward_iterator<KeyT, ValueT, HashFuncT>::locks;
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::mutex ForwardIteratorType<KeyT, ValueT, HashFuncT>::instancesMutex;
+std::mutex forward_iterator<KeyT, ValueT, HashFuncT>::instancesMutex;
 
 #endif

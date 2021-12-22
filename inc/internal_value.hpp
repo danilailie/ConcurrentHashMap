@@ -3,18 +3,18 @@
 
 #include <shared_mutex>
 
-template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
+template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 
-template <class KeyT, class ValueT, class HashFuncT> class InternalValueType
+template <class KeyT, class ValueT, class HashFuncT> class internal_value
 {
 public:
-  InternalValueType (const KeyT &aKey, const ValueT &aValue) : isMarkedForDelete (false), key (aKey), userValue (aValue)
+  internal_value (const KeyT &aKey, const ValueT &aValue) : isMarkedForDelete (false), keyValue (aKey, aValue)
   {
     valueMutex = std::make_unique<std::shared_mutex> ();
   }
 
-  InternalValueType (const std::pair<KeyT, ValueT> &aKeyValuePair)
-      : isMarkedForDelete (false), key (aKeyValuePair.first), userValue (aKeyValuePair.second)
+  internal_value (const std::pair<KeyT, ValueT> &aKeyValuePair)
+      : isMarkedForDelete (false), keyValue (aKeyValuePair.first, aKeyValuePair.second)
   {
     valueMutex = std::make_unique<std::shared_mutex> ();
   }
@@ -25,7 +25,7 @@ public:
     std::shared_lock<std::shared_mutex> lock (*valueMutex);
     if (!isMarkedForDelete)
       {
-	return key == aKey;
+	return keyValue.first == aKey;
       }
     return false;
   }
@@ -34,7 +34,7 @@ public:
   getKeyValuePair () const
   {
     std::shared_lock<std::shared_mutex> lock (*valueMutex);
-    return std::make_pair (key, userValue);
+    return keyValue;
   }
 
   void
@@ -62,16 +62,15 @@ public:
   getKey () const
   {
     std::shared_lock<std::shared_mutex> lock (*valueMutex);
-    return key;
+    return keyValue.first;
   }
 
 private:
-  using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
 
   std::unique_ptr<std::shared_mutex> valueMutex;
   bool isMarkedForDelete;
-  KeyT key;
-  ValueT userValue;
+  std::pair<KeyT, ValueT> keyValue;
 
   friend Map;
 };

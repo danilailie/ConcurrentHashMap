@@ -4,17 +4,17 @@
 #include <shared_mutex>
 #include <vector>
 
-#include "HashMapUtils.hpp"
-#include "InternalValue.hpp"
+#include "internal_value.hpp"
+#include "unordered_map_utils.hpp"
 
-template <class KeyT, class ValueT, class HashFuncT> class ConcurrentHashMap;
+template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 
-template <class KeyT, class ValueT, class HashFuncT> class Bucket
+template <class KeyT, class ValueT, class HashFuncT> class bucket
 {
 public:
-  using InternalValue = InternalValueType<KeyT, ValueT, HashFuncT>;
+  using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
 
-  Bucket ()
+  bucket ()
   {
     bucketMutex = std::make_unique<std::shared_mutex> ();
   }
@@ -27,17 +27,20 @@ public:
   }
 
   KeyT
-  getFirstKey ()
+  getFirstKey (std::size_t &position) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
     for (auto i = 0; i < values.size (); ++i)
       {
 	if (values[i].isAvailable ())
 	  {
+	    position = i;
 	    return values[i].getKey ();
 	  }
       }
-    return -1;
+
+    position = values.size ();
+    return InvalidKeyValue<KeyT> ();
   }
 
   KeyT
@@ -66,7 +69,7 @@ public:
       {
 	values.push_back (InternalValue (aKey, aValue));
 	++currentSize;
-	insertPosition = values.size () - 1;
+	insertPosition = int (values.size ()) - 1;
       }
     else
       {
@@ -89,7 +92,7 @@ public:
   find (const KeyT &aKey) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (std::size_t i = 0; i < values.size (); ++i)
+    for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].compareKey (aKey))
 	  {
@@ -103,7 +106,7 @@ public:
   erase (const KeyT &aKey)
   {
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
-    for (std::size_t i = 0; i < values.size (); ++i)
+    for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].compareKey (aKey))
 	  {
@@ -129,25 +132,25 @@ public:
     return std::pair<KeyT, ValueT> ();
   }
 
-  std::size_t
+  int
   getFirstValueIndex () const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (std::size_t i = 0; i < values.size (); ++i)
+    for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].isAvailable ())
 	  {
 	    return i;
 	  }
       }
-    return values.size ();
+    return int (values.size ());
   }
 
-  std::size_t
-  getNextValueIndex (std::size_t index) const
+  int
+  getNextValueIndex (int index) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (auto i = index + 1; i < values.size (); ++i)
+    for (int i = index + 1; i < int (values.size ()); ++i)
       {
 	if (values[i].isAvailable ())
 	  {
@@ -178,7 +181,7 @@ private:
   }
 
 private:
-  using Map = ConcurrentHashMap<KeyT, ValueT, HashFuncT>;
+  using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
 
   std::unique_ptr<std::shared_mutex> bucketMutex;
   std::vector<InternalValue> values;
