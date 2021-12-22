@@ -26,6 +26,7 @@ main ()
       {
 	auto it = myMap.find (i);
 	assert (it != myMap.end ());
+	// it.lockResource ();
       }
   };
 

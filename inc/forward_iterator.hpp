@@ -20,6 +20,7 @@ public:
   ~forward_iterator ()
   {
     decreaseInstances ();
+    unlockResource ();
   }
 
   forward_iterator &
@@ -74,6 +75,18 @@ public:
     forward_iterator tmp = *this;
     ++(*this);
     return tmp;
+  }
+
+  void
+  lockResource ()
+  {
+    map->lockResource (bucketIndex, valueIndex);
+  }
+
+  void
+  unlockResource ()
+  {
+    map->unlockResource (bucketIndex, valueIndex);
   }
 
 private:

@@ -65,6 +65,18 @@ public:
     return keyValue.first;
   }
 
+  bool
+  lock () const
+  {
+    return valueMutex->try_lock_shared ();
+  }
+
+  void
+  unlock () const
+  {
+    return valueMutex->unlock_shared ();
+  }
+
 private:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
 

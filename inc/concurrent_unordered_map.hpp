@@ -98,6 +98,10 @@ private:
   /// an invalid key.</summary> <param name="bucketIndex"></param> <param name="valueIndex"></param> <returns></returns>
   KeyT getNextElement (std::size_t &bucketIndex, int &valueIndex) const;
 
+  void lockResource (std::size_t &bucketIndex, int &valueIndex) const;
+
+  void unlockResource (std::size_t &bucketIndex, int &valueIndex) const;
+
   /// <summary>Physically delete the previously removed(erased) elements.</summary>
   /// <param></param>
   /// <returns></returns>
@@ -320,6 +324,20 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &
       valueIndex = nextValueIndex;
       return buckets[bucketIndex].getKeyAt (valueIndex);
     }
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+void
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::lockResource (std::size_t &bucketIndex, int &valueIndex) const
+{
+  buckets[bucketIndex].values[valueIndex].lock ();
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+void
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::unlockResource (std::size_t &bucketIndex, int &valueIndex) const
+{
+  buckets[bucketIndex].values[valueIndex].unlock ();
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
