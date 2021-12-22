@@ -18,10 +18,19 @@ public:
   using const_iterator = const forward_iterator<KeyT, ValueT, HashFuncT>;
 
 public:
+  /// <summary>Constructor</summary>
+  /// <param name="bucketCount">How many buckets to start with</param>
+  /// <returns></returns>
   concurrent_unordered_map (std::size_t bucketCount = 31);
 
+  /// <summary>Gets the number of elements in the map</summary>
+  /// <param></param>
+  /// <returns></returns>
   std::size_t getSize () const;
 
+  /// <summary></summary>
+  /// <param></param>
+  /// <returns>Begin iterator</returns>
   iterator begin () const;
   const_iterator
   cbegin () const
@@ -29,6 +38,9 @@ public:
     return begin ();
   };
 
+  /// <summary></summary>
+  /// <param></param>
+  /// <returns>End iterator</returns>
   iterator end () const;
   const_iterator
   cend () const
@@ -36,15 +48,35 @@ public:
     return end ();
   }
 
+  /// <summary>Inserts a key-value pair into the map</summary>
+  /// <param name="aKeyValuePair">The pair to be inserted</param>
+  /// <returns>A pair containing an iterator (can be end) and a bool result, true if operation has succeded.</returns>
   std::pair<iterator, bool> insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair);
+
+  /// <summary>Inserts a key and a value into the map</summary>
+  /// <param name="aKey">The key</param>
+  /// <param name="aValue">The value</param>
+  /// <returns>A pair containing an iterator (can be end) and a bool result, true if operation has succeded.</returns>
   std::pair<iterator, bool> insert (const KeyT &aKey, const ValueT &aValue);
 
+  /// <summary>Finds an element with a key in the map.</summary>
+  /// <param name="aKey">The key</param>
+  /// <returns>Iterator to the found element (will be end() if key is not found).</returns>
   iterator find (const KeyT &aKey) const;
 
+  /// <summary>Erases the element pointed by the iterator. Invalidates the iterator</summary>
+  /// <param name="anIterator">The iterator</param>
+  /// <returns>True if element was present in the map (IE iterator was valid).</returns>
   bool erase (const iterator &anIterator);
 
+  /// <summary>Erases the element with the key param. Invalidates any iterator to this element.</summary>
+  /// <param name="aKey">The key</param>
+  /// <returns>True if element was present in the map.</returns>
   bool erase (const KeyT &aKey);
 
+  /// <summary>Increases the number of buckets and starts moving all valid (not erased) to the new buckets.</summary>
+  /// <param ></param>
+  /// <returns></returns>
   void rehash ();
 
 private:
@@ -56,8 +88,19 @@ private:
   std::pair<KeyT, ValueT> &getIterValue (const iterator &anIter) const;
   std::pair<KeyT, ValueT> *getIterPtr (const iterator &anIter) const;
   std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
+
+  /// <summary>Gets the key of the first element - equivalent to begin()</summary>
+  /// <param></param>
+  /// <returns></returns>
   KeyT getFirstKey () const;
+
+  /// <summary>Gets the key of the valid element that comes after the reference one. If there is no such element returns
+  /// an invalid key.</summary> <param name="bucketIndex"></param> <param name="valueIndex"></param> <returns></returns>
   KeyT getNextElement (std::size_t &bucketIndex, int &valueIndex) const;
+
+  /// <summary>Physically delete the previously removed(erased) elements.</summary>
+  /// <param></param>
+  /// <returns></returns>
   void eraseUnavailableValues ();
 
   std::size_t
@@ -175,9 +218,6 @@ template <class KeyT, class ValueT, class HashFuncT>
 bool
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 {
-  // TODO: Ilie check this.
-  // std::unique_lock<std::shared_mutex> lock (rehashMutex);
-
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = hashResult % currentBucketCount;
 
