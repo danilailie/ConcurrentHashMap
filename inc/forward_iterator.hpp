@@ -20,6 +20,7 @@ public:
   ~forward_iterator ()
   {
     decreaseInstances ();
+    unlockResource ();
   }
 
   forward_iterator &
@@ -76,6 +77,23 @@ public:
     return tmp;
   }
 
+  void
+  lockResource ()
+  {
+    map->lockResource (bucketIndex, valueIndex);
+    isResourceLocked = true;
+  }
+
+  void
+  unlockResource ()
+  {
+    if (isResourceLocked)
+      {
+	map->unlockResource (bucketIndex, valueIndex);
+      }
+    isResourceLocked = false;
+  }
+
 private:
   forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex)
   {
@@ -83,6 +101,7 @@ private:
     map = aMap;
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
+    isResourceLocked = false;
 
     increaseInstances ();
   }
@@ -115,6 +134,8 @@ private:
   const Map *map;
   std::size_t bucketIndex;
   int valueIndex;
+
+  bool isResourceLocked;
 
   static std::unordered_map<const Map *, std::size_t> instances;
   static std::unordered_map<const Map *, std::shared_lock<std::shared_mutex>> locks;
