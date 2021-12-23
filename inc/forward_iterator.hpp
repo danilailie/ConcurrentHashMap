@@ -81,12 +81,17 @@ public:
   lockResource ()
   {
     map->lockResource (bucketIndex, valueIndex);
+    isResourceLocked = true;
   }
 
   void
   unlockResource ()
   {
-    map->unlockResource (bucketIndex, valueIndex);
+    if (isResourceLocked)
+      {
+	map->unlockResource (bucketIndex, valueIndex);
+      }
+    isResourceLocked = false;
   }
 
 private:
@@ -96,6 +101,7 @@ private:
     map = aMap;
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
+    isResourceLocked = false;
 
     increaseInstances ();
   }
@@ -128,6 +134,8 @@ private:
   const Map *map;
   std::size_t bucketIndex;
   int valueIndex;
+
+  bool isResourceLocked;
 
   static std::unordered_map<const Map *, std::size_t> instances;
   static std::unordered_map<const Map *, std::shared_lock<std::shared_mutex>> locks;
