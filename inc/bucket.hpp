@@ -182,6 +182,7 @@ private:
 
 private:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
+  using iterator = typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator;
 
   std::unique_ptr<std::shared_mutex> bucketMutex;
   std::vector<InternalValue> values;

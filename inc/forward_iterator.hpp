@@ -7,6 +7,7 @@ template <class KeyT, class ValueT, class HashFuncT> class forward_iterator
 {
 public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
+  using UniqueSharedLock = std::unique_ptr<std::shared_lock<std::shared_mutex>>;
 
   forward_iterator (const forward_iterator &other)
   {
@@ -20,7 +21,6 @@ public:
   ~forward_iterator ()
   {
     decreaseInstances ();
-    unlockResource ();
   }
 
   forward_iterator &
@@ -77,31 +77,25 @@ public:
     return tmp;
   }
 
-  void
-  lockResource ()
-  {
-    map->lockResource (bucketIndex, valueIndex);
-    isResourceLocked = true;
-  }
-
-  void
-  unlockResource ()
-  {
-    if (isResourceLocked)
-      {
-	map->unlockResource (bucketIndex, valueIndex);
-      }
-    isResourceLocked = false;
-  }
-
 private:
-  forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex)
+  //   forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex)
+  //   {
+  //     key = aKey;
+  //     map = aMap;
+  //     bucketIndex = aBucketIndex;
+  //     valueIndex = aValueIndex;
+
+  //     increaseInstances ();
+  //   }
+
+  forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex,
+		    UniqueSharedLock &&lock)
   {
     key = aKey;
     map = aMap;
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
-    isResourceLocked = false;
+    valueLock = std::move (lock);
 
     increaseInstances ();
   }
@@ -130,12 +124,11 @@ private:
   }
 
 private:
-  KeyT key; // used for compare between iterator types.
+  KeyT key;
   const Map *map;
   std::size_t bucketIndex;
   int valueIndex;
-
-  bool isResourceLocked;
+  UniqueSharedLock valueLock;
 
   static std::unordered_map<const Map *, std::size_t> instances;
   static std::unordered_map<const Map *, std::shared_lock<std::shared_mutex>> locks;

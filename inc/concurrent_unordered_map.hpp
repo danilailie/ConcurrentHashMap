@@ -154,8 +154,8 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::begin () const
     {
       if (buckets[i].getSize () > 0)
 	{
-	  auto valueIndex = buckets[i].getFirstValueIndex ();
-	  auto key = buckets[i].getKeyAt (valueIndex);
+	  int valueIndex = -1;
+	  auto key = buckets[i].getFirstKey (valueIndex);
 	  return iterator (key, this, i, valueIndex);
 	}
     }
