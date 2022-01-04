@@ -3,6 +3,7 @@
 
 template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 template <class KeyT, class ValueT, class HashFuncT> class bucket;
+template <class KeyT, class ValueT, class HashFuncT> class internal_value;
 
 template <class KeyT, class ValueT, class HashFuncT> class forward_iterator
 {
@@ -129,6 +130,7 @@ private:
 
 private:
   using Bucket = bucket<KeyT, ValueT, HashFuncT>;
+  using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
 
   KeyT key;
   const Map *map;
@@ -142,6 +144,7 @@ private:
 
   friend Map;
   friend Bucket;
+  friend InternalValue;
 };
 
 template <class KeyT, class ValueT, class HashFuncT>

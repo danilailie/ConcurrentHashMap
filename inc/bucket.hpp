@@ -171,10 +171,24 @@ public:
 
     if (itBucketIndex == currentBucketIndex) // get next valid iterator in current bucket (if exists)
       {
+	int nextValueIndex = getNextValueIndex (it.valueIndex);
+
+	if (nextValueIndex != -1)
+	  {
+	    values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex);
+	    return true;
+	  }
+	else // need to go to next bucket
+	  {
+	    return false;
+	  }
       }
-    else // need to let the map try the next bucket
+    else // need to return the first valid element in this bucket
       {
-	return false;
+	int nextValueIndex =
+	  getNextValueIndex (-1); // we are sure there's at least one valid value in the current bucket.
+	values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex);
+	return true;
       }
     return false;
   }
