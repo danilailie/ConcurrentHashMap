@@ -185,8 +185,13 @@ public:
       }
     else // need to return the first valid element in this bucket
       {
-	int nextValueIndex =
-	  getNextValueIndex (-1); // we are sure there's at least one valid value in the current bucket.
+	int nextValueIndex = getNextValueIndex (-1);
+
+	if (nextValueIndex == -1)
+	  {
+	    return false;
+	  }
+
 	values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex);
 	return true;
       }

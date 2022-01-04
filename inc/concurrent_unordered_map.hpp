@@ -334,7 +334,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 void
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::advanceIterator (iterator &it) const
 {
-  std::size_t nextBucketIndex = it.bucketIndex;
+  int nextBucketIndex = it.bucketIndex;
 
   bool found = false;
   do

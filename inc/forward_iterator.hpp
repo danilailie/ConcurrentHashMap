@@ -47,6 +47,7 @@ public:
       }
 
     map = other.map;
+    key = other.key;
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
     valueLock = other.valueLock;
@@ -134,7 +135,7 @@ private:
 
   KeyT key;
   const Map *map;
-  std::size_t bucketIndex;
+  int bucketIndex;
   int valueIndex;
   UniqueSharedLock valueLock;
 
