@@ -16,6 +16,7 @@ template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class con
 public:
   using iterator = forward_iterator<KeyT, ValueT, HashFuncT>;
   using const_iterator = const forward_iterator<KeyT, ValueT, HashFuncT>;
+  using UniqueSharedLock = std::unique_ptr<std::shared_lock<std::shared_mutex>>;
 
 public:
   /// <summary>Constructor</summary>
@@ -98,6 +99,8 @@ private:
   /// an invalid key.</summary> <param name="bucketIndex"></param> <param name="valueIndex"></param> <returns></returns>
   KeyT getNextElement (std::size_t &bucketIndex, int &valueIndex) const;
 
+  void advanceIterator (iterator &it) const;
+
   void lockResource (std::size_t &bucketIndex, int &valueIndex) const;
 
   void unlockResource (std::size_t &bucketIndex, int &valueIndex) const;
@@ -150,16 +153,17 @@ template <class KeyT, class ValueT, class HashFuncT>
 typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::begin () const
 {
-  for (std::size_t i = 0; i < buckets.size (); ++i)
+  for (int i = 0; i < int (buckets.size ()); ++i)
     {
       if (buckets[i].getSize () > 0)
 	{
-	  auto valueIndex = buckets[i].getFirstValueIndex ();
-	  auto key = buckets[i].getKeyAt (valueIndex);
-	  return iterator (key, this, i, valueIndex);
+	  return buckets[i].begin (this, i);
+	  //   int valueIndex = -1;
+	  //   auto key = buckets[i].getFirstKey (valueIndex);
+	  //   return iterator (key, this, i, valueIndex);
 	}
     }
-  return iterator (InvalidKeyValue<KeyT> (), this, -1, -1);
+  return end ();
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -191,9 +195,9 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, con
       added = true;
     }
 
-  return std::make_pair (concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator (aKey, this, bucketIndex,
-										      position),
-			 added);
+  auto it = added ? buckets[bucketIndex].getIterator (this, bucketIndex, position) : end ();
+
+  return std::make_pair (it, added);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -206,7 +210,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
   auto position = buckets[bucketIndex].find (aKey);
   if (position != -1)
     {
-      return iterator (aKey, this, bucketIndex, position);
+      return buckets[bucketIndex].getIterator (this, bucketIndex, position);
     }
   return end ();
 }
@@ -315,7 +319,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &
       else
 	{
 	  bucketIndex = nextBucketIndex;
-	  std::size_t position;
+	  int position;
 	  return buckets[nextBucketIndex].getFirstKey (position);
 	}
     }
@@ -323,6 +327,32 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &
     {
       valueIndex = nextValueIndex;
       return buckets[bucketIndex].getKeyAt (valueIndex);
+    }
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+void
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::advanceIterator (iterator &it) const
+{
+  int nextBucketIndex = it.bucketIndex;
+
+  bool found = false;
+  do
+    {
+      if (buckets[nextBucketIndex].advanceIterator (it, nextBucketIndex))
+	{
+	  found = true;
+	}
+      else
+	{
+	  ++nextBucketIndex;
+	}
+    }
+  while (!found && nextBucketIndex < buckets.size ());
+
+  if (!found)
+    {
+      it = end ();
     }
 }
 
