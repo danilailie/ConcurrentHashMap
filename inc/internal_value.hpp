@@ -8,6 +8,9 @@ template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_
 template <class KeyT, class ValueT, class HashFuncT> class internal_value
 {
 public:
+  using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
+  using iterator = typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator;
+
   internal_value (const KeyT &aKey, const ValueT &aValue) : isMarkedForDelete (false), keyValue (aKey, aValue)
   {
     valueMutex = std::make_unique<std::shared_mutex> ();
@@ -65,6 +68,13 @@ public:
     return keyValue.first;
   }
 
+  iterator
+  getIterator (Map const *const aMap, std::size_t bucketIndex, int valueIndex) const
+  {
+    auto lock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
+    return iterator (keyValue.first, aMap, bucketIndex, valueIndex, lock);
+  }
+
   bool
   lock () const
   {
@@ -78,8 +88,6 @@ public:
   }
 
 private:
-  using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
-
   std::unique_ptr<std::shared_mutex> valueMutex;
   bool isMarkedForDelete;
   std::pair<KeyT, ValueT> keyValue;

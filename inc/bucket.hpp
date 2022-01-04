@@ -13,6 +13,8 @@ template <class KeyT, class ValueT, class HashFuncT> class bucket
 {
 public:
   using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
+  using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
+  using iterator = typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator;
 
   bucket ()
   {
@@ -27,7 +29,7 @@ public:
   }
 
   KeyT
-  getFirstKey (std::size_t &position) const
+  getFirstKey (int &position) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
     for (auto i = 0; i < values.size (); ++i)
@@ -39,7 +41,7 @@ public:
 	  }
       }
 
-    position = values.size ();
+    position = int (values.size ());
     return InvalidKeyValue<KeyT> ();
   }
 
@@ -146,6 +148,44 @@ public:
     return int (values.size ());
   }
 
+  iterator
+  begin (Map const *const aMap, int bucketIndex) const
+  {
+    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    for (int i = 0; i < int (values.size ()); ++i)
+      {
+	if (values[i].isAvailable ())
+	  {
+	    return values[i].getIterator (aMap, bucketIndex, i);
+	  }
+      }
+
+    return aMap->end ();
+  }
+
+  bool
+  advanceIterator (iterator &it, std::size_t currentBucketIndex) const
+  {
+    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    auto itBucketIndex = it.bucketIndex;
+
+    if (itBucketIndex == currentBucketIndex) // get next valid iterator in current bucket (if exists)
+      {
+      }
+    else // need to let the map try the next bucket
+      {
+	return false;
+      }
+    return false;
+  }
+
+  iterator
+  getIterator (Map const *const aMap, std::size_t bucketIndex, int valueIndex) const
+  {
+    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    return values[valueIndex].getIterator (aMap, bucketIndex, valueIndex);
+  }
+
   int
   getNextValueIndex (int index) const
   {
@@ -181,9 +221,6 @@ private:
   }
 
 private:
-  using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
-  using iterator = typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator;
-
   std::unique_ptr<std::shared_mutex> bucketMutex;
   std::vector<InternalValue> values;
   std::size_t currentSize = 0;

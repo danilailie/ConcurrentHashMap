@@ -2,18 +2,32 @@
 #define _FORWARD_ITERATOR_HPP_
 
 template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
+template <class KeyT, class ValueT, class HashFuncT> class bucket;
 
 template <class KeyT, class ValueT, class HashFuncT> class forward_iterator
 {
 public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
-  using UniqueSharedLock = std::unique_ptr<std::shared_lock<std::shared_mutex>>;
+  using UniqueSharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
+
+  forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex,
+		    UniqueSharedLock &lock)
+  {
+    key = aKey;
+    map = aMap;
+    bucketIndex = aBucketIndex;
+    valueIndex = aValueIndex;
+    valueLock = lock;
+
+    increaseInstances ();
+  }
 
   forward_iterator (const forward_iterator &other)
   {
     map = other.map;
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
+    valueLock = other.valueLock;
 
     increaseInstances ();
   }
@@ -28,12 +42,13 @@ public:
   {
     if (this == &other)
       {
-	return this;
+	return *this;
       }
 
     map = other.map;
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
+    valueLock = other.valueLock;
 
     return *this;
   }
@@ -66,6 +81,7 @@ public:
   operator++ ()
   {
     key = map->getNextElement (bucketIndex, valueIndex);
+    map->advanceIterator (*this);
     return *this;
   }
 
@@ -78,24 +94,12 @@ public:
   }
 
 private:
-  //   forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex)
-  //   {
-  //     key = aKey;
-  //     map = aMap;
-  //     bucketIndex = aBucketIndex;
-  //     valueIndex = aValueIndex;
-
-  //     increaseInstances ();
-  //   }
-
-  forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex,
-		    UniqueSharedLock &&lock)
+  forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex)
   {
     key = aKey;
     map = aMap;
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
-    valueLock = std::move (lock);
 
     increaseInstances ();
   }
@@ -124,6 +128,8 @@ private:
   }
 
 private:
+  using Bucket = bucket<KeyT, ValueT, HashFuncT>;
+
   KeyT key;
   const Map *map;
   std::size_t bucketIndex;
@@ -135,6 +141,7 @@ private:
   static std::mutex instancesMutex;
 
   friend Map;
+  friend Bucket;
 };
 
 template <class KeyT, class ValueT, class HashFuncT>
