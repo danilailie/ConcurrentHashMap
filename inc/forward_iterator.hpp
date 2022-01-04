@@ -81,7 +81,7 @@ public:
   forward_iterator &
   operator++ ()
   {
-    key = map->getNextElement (bucketIndex, valueIndex);
+    //     key = map->getNextElement (bucketIndex, valueIndex);
     map->advanceIterator (*this);
     return *this;
   }

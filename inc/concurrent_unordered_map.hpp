@@ -335,12 +335,22 @@ void
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::advanceIterator (iterator &it) const
 {
   std::size_t nextBucketIndex = it.bucketIndex;
-  while (nextBucketIndex < buckets.size () && !buckets[nextBucketIndex].advanceIterator (it, nextBucketIndex))
-    {
-      ++nextBucketIndex;
-    }
 
-  if (nextBucketIndex == buckets.size ())
+  bool found = false;
+  do
+    {
+      if (buckets[nextBucketIndex].advanceIterator (it, nextBucketIndex))
+	{
+	  found = true;
+	}
+      else
+	{
+	  ++nextBucketIndex;
+	}
+    }
+  while (!found && nextBucketIndex < buckets.size ());
+
+  if (!found)
     {
       it = end ();
     }
