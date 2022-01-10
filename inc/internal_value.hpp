@@ -69,14 +69,14 @@ public:
   }
 
   iterator
-  getIterator (Map const *const aMap, std::size_t bucketIndex, int valueIndex) const
+  getIterator (Map const *const aMap, int bucketIndex, int valueIndex) const
   {
     auto lock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
     return iterator (keyValue.first, aMap, bucketIndex, valueIndex, lock);
   }
 
   void
-  updateIterator (iterator &it, std::size_t bucketIndex, int valueIndex) const
+  updateIterator (iterator &it, int bucketIndex, int valueIndex) const
   {
     auto lock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
     it.key = keyValue.first;

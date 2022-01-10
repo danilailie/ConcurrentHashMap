@@ -11,8 +11,7 @@ public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
   using UniqueSharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
 
-  forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex,
-		    UniqueSharedLock &lock)
+  forward_iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex, UniqueSharedLock &lock)
   {
     key = aKey;
     map = aMap;
@@ -82,7 +81,6 @@ public:
   forward_iterator &
   operator++ ()
   {
-    //     key = map->getNextElement (bucketIndex, valueIndex);
     map->advanceIterator (*this);
     return *this;
   }
@@ -96,7 +94,7 @@ public:
   }
 
 private:
-  forward_iterator (const KeyT &aKey, Map const *const aMap, std::size_t aBucketIndex, int aValueIndex)
+  forward_iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex)
   {
     key = aKey;
     map = aMap;

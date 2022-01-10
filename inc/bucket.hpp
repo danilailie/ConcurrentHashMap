@@ -91,20 +91,6 @@ public:
   }
 
   int
-  find (const KeyT &aKey) const
-  {
-    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (int i = 0; i < int (values.size ()); ++i)
-      {
-	if (values[i].compareKey (aKey))
-	  {
-	    return i;
-	  }
-      }
-    return -1;
-  }
-
-  int
   erase (const KeyT &aKey)
   {
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
@@ -164,10 +150,10 @@ public:
   }
 
   bool
-  advanceIterator (iterator &it, std::size_t currentBucketIndex) const
+  advanceIterator (iterator &it, int currentBucketIndex) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    auto itBucketIndex = it.bucketIndex;
+    int itBucketIndex = it.bucketIndex;
 
     if (itBucketIndex == currentBucketIndex) // get next valid iterator in current bucket (if exists)
       {
@@ -199,10 +185,19 @@ public:
   }
 
   iterator
-  getIterator (Map const *const aMap, std::size_t bucketIndex, int valueIndex) const
+  getIterator (Map const *const aMap, int bucketIndex, KeyT key) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    return values[valueIndex].getIterator (aMap, bucketIndex, valueIndex);
+
+    auto valueIndex = findKey (key);
+    if (valueIndex != -1)
+      {
+	return values[valueIndex].getIterator (aMap, bucketIndex, valueIndex);
+      }
+    else
+      {
+	return aMap->end ();
+      }
   }
 
   int
@@ -220,6 +215,19 @@ public:
   }
 
 private:
+  int
+  findKey (const KeyT &aKey) const
+  {
+    for (int i = 0; i < int (values.size ()); ++i)
+      {
+	if (values[i].compareKey (aKey))
+	  {
+	    return i;
+	  }
+      }
+    return -1;
+  }
+
   std::size_t
   eraseUnavailableValues ()
   {

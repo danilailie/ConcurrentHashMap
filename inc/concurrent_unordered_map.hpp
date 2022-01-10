@@ -158,9 +158,6 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::begin () const
       if (buckets[i].getSize () > 0)
 	{
 	  return buckets[i].begin (this, i);
-	  //   int valueIndex = -1;
-	  //   auto key = buckets[i].getFirstKey (valueIndex);
-	  //   return iterator (key, this, i, valueIndex);
 	}
     }
   return end ();
@@ -185,7 +182,7 @@ std::pair<typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator, 
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const ValueT &aValue)
 {
   auto hashResult = hashFunc (aKey);
-  auto bucketIndex = hashResult % currentBucketCount;
+  int bucketIndex = int (hashResult) % currentBucketCount;
 
   bool added = false;
   int position = buckets[bucketIndex].insert (aKey, aValue);
@@ -195,7 +192,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, con
       added = true;
     }
 
-  auto it = added ? buckets[bucketIndex].getIterator (this, bucketIndex, position) : end ();
+  auto it = added ? buckets[bucketIndex].getIterator (this, bucketIndex, aKey) : end ();
 
   return std::make_pair (it, added);
 }
@@ -205,14 +202,9 @@ typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
 {
   auto hashResult = hashFunc (aKey);
-  auto bucketIndex = hashResult % currentBucketCount;
+  int bucketIndex = int (hashResult) % currentBucketCount;
 
-  auto position = buckets[bucketIndex].find (aKey);
-  if (position != -1)
-    {
-      return buckets[bucketIndex].getIterator (this, bucketIndex, position);
-    }
-  return end ();
+  return buckets[bucketIndex].getIterator (this, bucketIndex, aKey);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -348,7 +340,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::advanceIterator (iterator &it
 	  ++nextBucketIndex;
 	}
     }
-  while (!found && nextBucketIndex < buckets.size ());
+  while (!found && nextBucketIndex < int (buckets.size ()));
 
   if (!found)
     {
