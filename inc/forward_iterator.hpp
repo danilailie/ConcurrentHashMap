@@ -9,15 +9,17 @@ template <class KeyT, class ValueT, class HashFuncT> class forward_iterator
 {
 public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
-  using UniqueSharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
+  using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
 
-  forward_iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex, UniqueSharedLock &lock)
+  forward_iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex, SharedLock aBucketLock,
+		    SharedLock aValueLock)
   {
     key = aKey;
     map = aMap;
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
-    valueLock = lock;
+    bucketLock = aBucketLock;
+    valueLock = aValueLock;
 
     increaseInstances ();
   }
@@ -135,7 +137,8 @@ private:
   const Map *map;
   int bucketIndex;
   int valueIndex;
-  UniqueSharedLock valueLock;
+  SharedLock bucketLock;
+  SharedLock valueLock;
 
   static std::unordered_map<const Map *, std::size_t> instances;
   static std::unordered_map<const Map *, std::shared_lock<std::shared_mutex>> locks;

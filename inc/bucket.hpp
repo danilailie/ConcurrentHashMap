@@ -137,12 +137,13 @@ public:
   iterator
   begin (Map const *const aMap, int bucketIndex) const
   {
-    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    auto bucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
+
     for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].isAvailable ())
 	  {
-	    return values[i].getIterator (aMap, bucketIndex, i);
+	    return values[i].getIterator (aMap, bucketIndex, i, bucketLock);
 	  }
       }
 
@@ -187,12 +188,12 @@ public:
   iterator
   getIterator (Map const *const aMap, int bucketIndex, KeyT key) const
   {
-    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    auto bucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
 
     auto valueIndex = findKey (key);
     if (valueIndex != -1)
       {
-	return values[valueIndex].getIterator (aMap, bucketIndex, valueIndex);
+	return values[valueIndex].getIterator (aMap, bucketIndex, valueIndex, bucketLock);
       }
     else
       {
