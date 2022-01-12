@@ -5,13 +5,13 @@ template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_
 template <class KeyT, class ValueT, class HashFuncT> class bucket;
 template <class KeyT, class ValueT, class HashFuncT> class internal_value;
 
-template <class KeyT, class ValueT, class HashFuncT> class forward_iterator
+template <class KeyT, class ValueT, class HashFuncT> class iterator
 {
 public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
   using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
 
-  forward_iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex, SharedLock aBucketLock,
+  iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex, SharedLock aBucketLock,
 		    SharedLock aValueLock)
   {
     key = aKey;
@@ -24,7 +24,7 @@ public:
     increaseInstances ();
   }
 
-  forward_iterator (const forward_iterator &other)
+  iterator (const iterator &other)
   {
     map = other.map;
     bucketIndex = other.bucketIndex;
@@ -34,13 +34,13 @@ public:
     increaseInstances ();
   }
 
-  ~forward_iterator ()
+  ~iterator ()
   {
     decreaseInstances ();
   }
 
-  forward_iterator &
-  operator= (const forward_iterator &other)
+  iterator &
+  operator= (const iterator &other)
   {
     if (this == &other)
       {
@@ -69,25 +69,29 @@ public:
   }
 
   bool
-  operator== (const forward_iterator &another)
+  operator== (const iterator &another)
   {
     return map == another.map && key == another.key;
   }
 
   bool
-  operator!= (const forward_iterator &other)
+  operator!= (const iterator &other)
   {
     return map != other.map || key != other.key;
   }
 
-  forward_iterator &
+  iterator &
   operator++ ()
   {
+    if (!bucketLock)
+      {
+	bucketLock = map->aquireBucketLock (bucketIndex);
+      }
     map->advanceIterator (*this);
     return *this;
   }
 
-  forward_iterator &
+  iterator &
   operator++ (int)
   {
     forward_iterator tmp = *this;
@@ -96,7 +100,7 @@ public:
   }
 
 private:
-  forward_iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex)
+  iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex)
   {
     key = aKey;
     map = aMap;
@@ -151,13 +155,13 @@ private:
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::unordered_map<const concurrent_unordered_map<KeyT, ValueT, HashFuncT> *, std::size_t>
-  forward_iterator<KeyT, ValueT, HashFuncT>::instances;
+  iterator<KeyT, ValueT, HashFuncT>::instances;
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::unordered_map<const concurrent_unordered_map<KeyT, ValueT, HashFuncT> *, std::shared_lock<std::shared_mutex>>
-  forward_iterator<KeyT, ValueT, HashFuncT>::locks;
+  iterator<KeyT, ValueT, HashFuncT>::locks;
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::mutex forward_iterator<KeyT, ValueT, HashFuncT>::instancesMutex;
+std::mutex iterator<KeyT, ValueT, HashFuncT>::instancesMutex;
 
 #endif

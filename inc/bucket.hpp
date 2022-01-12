@@ -14,7 +14,7 @@ template <class KeyT, class ValueT, class HashFuncT> class bucket
 public:
   using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
-  using iterator = typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator;
+  using Iterator = typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::Iterator;
 
   bucket ()
   {
@@ -136,7 +136,7 @@ public:
     return int (values.size ());
   }
 
-  iterator
+  Iterator
   begin (Map const *const aMap, int bucketIndex) const
   {
     auto bucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
@@ -153,7 +153,7 @@ public:
   }
 
   bool
-  advanceIterator (iterator &it, int currentBucketIndex) const
+  advanceIterator (Iterator &it, int currentBucketIndex) const
   {
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
     int itBucketIndex = it.bucketIndex;
@@ -187,14 +187,19 @@ public:
     return false;
   }
 
-  iterator
-  getIterator (Map const *const aMap, int bucketIndex, KeyT key) const
+  Iterator
+  getIterator (Map const *const aMap, int bucketIndex, KeyT key, bool withBucketLock) const
   {
-    auto bucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
+    auto sharedBucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
 
     auto valueIndex = findKey (key);
     if (valueIndex != -1)
       {
+	std::shared_ptr<std::shared_lock<std::shared_mutex>> bucketLock;
+	if (withBucketLock)
+	  {
+	    bucketLock = sharedBucketLock;
+	  }
 	return values[valueIndex].getIterator (aMap, bucketIndex, valueIndex, bucketLock);
       }
     else

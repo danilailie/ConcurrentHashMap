@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include "concurrent_unordered_map.hpp"
-#include "forward_iterator.hpp"
+#include "iterator.hpp"
 #include "large_object.hpp"
 
 int
