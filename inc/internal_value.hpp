@@ -86,6 +86,13 @@ public:
     it.valueLock = lock;
   }
 
+  void
+  updateValue (const ValueT &newValue)
+  {
+    std::unique_lock<std::shared_mutex> lock (*valueMutex);
+    keyValue.second = newValue;
+  }
+
   bool
   lock () const
   {

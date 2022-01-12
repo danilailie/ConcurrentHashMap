@@ -184,7 +184,7 @@ std::pair<typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator, 
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const ValueT &aValue)
 {
   auto hashResult = hashFunc (aKey);
-  auto bucketIndex = int (hashResult) % currentBucketCount;
+  int bucketIndex = int (hashResult) % currentBucketCount;
 
   int position = -1;
   bool added = buckets[bucketIndex].insert (aKey, aValue, position);

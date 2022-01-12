@@ -80,6 +80,7 @@ public:
 	if (!values[foundPosition].isAvailable ())
 	  {
 	    values[foundPosition].setAvailable ();
+	    values[foundPosition].updateValue (aValue);
 	    insertPosition = foundPosition;
 	    position = insertPosition;
 	    return true;
