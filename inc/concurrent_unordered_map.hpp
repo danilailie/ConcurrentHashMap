@@ -184,15 +184,14 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, con
   auto hashResult = hashFunc (aKey);
   auto bucketIndex = int (hashResult) % currentBucketCount;
 
-  bool added = false;
-  int position = buckets[bucketIndex].insert (aKey, aValue);
-  if (position != -1)
+  int position = -1;
+  bool added = buckets[bucketIndex].insert (aKey, aValue, position);
+  if (added)
     {
       valueCount++;
-      added = true;
     }
 
-  auto it = added ? buckets[bucketIndex].getIterator (this, bucketIndex, aKey) : end ();
+  auto it = position != -1 ? buckets[bucketIndex].getIterator (this, bucketIndex, aKey) : end ();
 
   return std::make_pair (it, added);
 }
@@ -397,7 +396,9 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::rehash ()
 	    {
 	      auto hashResult = hashFunc (buckets[i].values[j].keyValue.first);
 	      auto bucketIndex = int (hashResult) % currentBucketCount;
-	      newBuckets[bucketIndex].insert (buckets[i].values[j].getKeyValuePair ());
+	      auto keyValue = buckets[i].values[j].getKeyValuePair ();
+	      int valueIndex = -1;
+	      newBuckets[bucketIndex].insert (keyValue.first, keyValue.second, valueIndex);
 	    }
 	}
     }
