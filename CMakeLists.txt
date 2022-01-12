@@ -9,7 +9,7 @@ include_directories(inc)
 set(HEADERS
     inc/bucket.hpp
     inc/concurrent_unordered_map.hpp
-    inc/forward_iterator.hpp
+    inc/iterator.hpp
     inc/internal_value.hpp
     inc/unordered_map_utils.hpp
 )

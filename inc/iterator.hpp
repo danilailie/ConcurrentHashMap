@@ -5,14 +5,14 @@ template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_
 template <class KeyT, class ValueT, class HashFuncT> class bucket;
 template <class KeyT, class ValueT, class HashFuncT> class internal_value;
 
-template <class KeyT, class ValueT, class HashFuncT> class iterator
+template <class KeyT, class ValueT, class HashFuncT> class Iterator
 {
 public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
   using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
 
-  iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex, SharedLock aBucketLock,
-		    SharedLock aValueLock)
+  Iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex, SharedLock aBucketLock,
+	    SharedLock aValueLock)
   {
     key = aKey;
     map = aMap;
@@ -24,7 +24,7 @@ public:
     increaseInstances ();
   }
 
-  iterator (const iterator &other)
+  Iterator (const Iterator &other)
   {
     map = other.map;
     bucketIndex = other.bucketIndex;
@@ -34,13 +34,13 @@ public:
     increaseInstances ();
   }
 
-  ~iterator ()
+  ~Iterator ()
   {
     decreaseInstances ();
   }
 
-  iterator &
-  operator= (const iterator &other)
+  Iterator &
+  operator= (const Iterator &other)
   {
     if (this == &other)
       {
@@ -69,18 +69,18 @@ public:
   }
 
   bool
-  operator== (const iterator &another)
+  operator== (const Iterator &another)
   {
     return map == another.map && key == another.key;
   }
 
   bool
-  operator!= (const iterator &other)
+  operator!= (const Iterator &other)
   {
     return map != other.map || key != other.key;
   }
 
-  iterator &
+  Iterator &
   operator++ ()
   {
     if (!bucketLock)
@@ -91,16 +91,16 @@ public:
     return *this;
   }
 
-  iterator &
+  Iterator &
   operator++ (int)
   {
-    forward_iterator tmp = *this;
+    Iterator tmp = *this;
     ++(*this);
     return tmp;
   }
 
 private:
-  iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex)
+  Iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex)
   {
     key = aKey;
     map = aMap;
@@ -155,13 +155,12 @@ private:
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::unordered_map<const concurrent_unordered_map<KeyT, ValueT, HashFuncT> *, std::size_t>
-  iterator<KeyT, ValueT, HashFuncT>::instances;
+  Iterator<KeyT, ValueT, HashFuncT>::instances;
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::unordered_map<const concurrent_unordered_map<KeyT, ValueT, HashFuncT> *, std::shared_lock<std::shared_mutex>>
-  iterator<KeyT, ValueT, HashFuncT>::locks;
+  Iterator<KeyT, ValueT, HashFuncT>::locks;
 
-template <class KeyT, class ValueT, class HashFuncT>
-std::mutex iterator<KeyT, ValueT, HashFuncT>::instancesMutex;
+template <class KeyT, class ValueT, class HashFuncT> std::mutex Iterator<KeyT, ValueT, HashFuncT>::instancesMutex;
 
 #endif

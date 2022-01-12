@@ -14,7 +14,7 @@ template <class KeyT, class ValueT, class HashFuncT> class bucket
 public:
   using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
-  using Iterator = typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::Iterator;
+  using Iterator = typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator;
 
   bucket ()
   {
@@ -53,7 +53,7 @@ public:
   }
 
   bool
-  insert (const KeyT &aKey, const ValueT &aValue, int& position)
+  insert (const KeyT &aKey, const ValueT &aValue, int &position)
   {
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
 

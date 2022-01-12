@@ -8,14 +8,14 @@
 #include <vector>
 
 #include "bucket.hpp"
-#include "Iterator.hpp"
 #include "internal_value.hpp"
+#include "iterator.hpp"
 
 template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class concurrent_unordered_map
 {
 public:
-  using Iterator = iterator<KeyT, ValueT, HashFuncT>;
-  using ConstIterator = const iterator<KeyT, ValueT, HashFuncT>;
+  using iterator = Iterator<KeyT, ValueT, HashFuncT>;
+  using const_iterator = const Iterator<KeyT, ValueT, HashFuncT>;
   using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
   using UniqueSharedLock = std::unique_ptr<std::shared_lock<std::shared_mutex>>;
 
@@ -33,8 +33,8 @@ public:
   /// <summary></summary>
   /// <param></param>
   /// <returns>Begin Iterator</returns>
-  Iterator begin () const;
-  ConstIterator
+  iterator begin () const;
+  const_iterator
   cbegin () const
   {
     return begin ();
@@ -43,8 +43,8 @@ public:
   /// <summary></summary>
   /// <param></param>
   /// <returns>End Iterator</returns>
-  Iterator end () const;
-  ConstIterator
+  iterator end () const;
+  const_iterator
   cend () const
   {
     return end ();
@@ -53,23 +53,23 @@ public:
   /// <summary>Inserts a key-value pair into the map</summary>
   /// <param name="aKeyValuePair">The pair to be inserted</param>
   /// <returns>A pair containing an Iterator (can be end) and a bool result, true if operation has succeded.</returns>
-  std::pair<Iterator, bool> insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair);
+  std::pair<iterator, bool> insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair);
 
   /// <summary>Inserts a key and a value into the map</summary>
   /// <param name="aKey">The key</param>
   /// <param name="aValue">The value</param>
   /// <returns>A pair containing an Iterator (can be end) and a bool result, true if operation has succeded.</returns>
-  std::pair<Iterator, bool> insert (const KeyT &aKey, const ValueT &aValue);
+  std::pair<iterator, bool> insert (const KeyT &aKey, const ValueT &aValue);
 
   /// <summary>Finds an element with a key in the map.</summary>
   /// <param name="aKey">The key</param>
   /// <returns>Iterator to the found element (will be end() if key is not found).</returns>
-  Iterator find (const KeyT &aKey) const;
+  iterator find (const KeyT &aKey) const;
 
   /// <summary>Erases the element pointed by the Iterator. Invalidates the Iterator</summary>
   /// <param name="anIterator">The Iterator</param>
   /// <returns>True if element was present in the map (IE Iterator was valid).</returns>
-  bool erase (const Iterator &anIterator);
+  bool erase (const iterator &anIterator);
 
   /// <summary>Erases the element with the key param. Invalidates any Iterator to this element.</summary>
   /// <param name="aKey">The key</param>
@@ -87,8 +87,8 @@ private:
 
 private:
   std::pair<KeyT, ValueT> &getIterValue (const KeyT &aKey) const;
-  std::pair<KeyT, ValueT> &getIterValue (const Iterator &anIter) const;
-  std::pair<KeyT, ValueT> *getIterPtr (const Iterator &anIter) const;
+  std::pair<KeyT, ValueT> &getIterValue (const iterator &anIter) const;
+  std::pair<KeyT, ValueT> *getIterPtr (const iterator &anIter) const;
   std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
   SharedLock aquireBucketLock (int bucketIndex) const;
 
@@ -101,7 +101,7 @@ private:
   /// an invalid key.</summary> <param name="bucketIndex"></param> <param name="valueIndex"></param> <returns></returns>
   KeyT getNextElement (std::size_t &bucketIndex, int &valueIndex) const;
 
-  void advanceIterator (Iterator &it) const;
+  void advanceIterator (iterator &it) const;
 
   void lockResource (std::size_t &bucketIndex, int &valueIndex) const;
 
@@ -134,7 +134,7 @@ private:
   std::atomic<std::size_t> valueCount;
   std::atomic<std::size_t> erasedCount;
 
-  friend Iterator;
+  friend iterator;
 };
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -152,7 +152,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getSize () const
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::Iterator
+typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::begin () const
 {
   for (int i = 0; i < int (buckets.size ()); ++i)
@@ -166,21 +166,21 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::begin () const
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::Iterator
+typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::end () const
 {
   return Iterator (InvalidKeyValue<KeyT> (), this, -1, -1);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::pair<typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::Iterator, bool>
+std::pair<typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator, bool>
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair)
 {
   return insert (aKeyValuePair.first, aKeyValuePair.second);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-std::pair<typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::Iterator, bool>
+std::pair<typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator, bool>
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, const ValueT &aValue)
 {
   auto hashResult = hashFunc (aKey);
@@ -199,7 +199,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, con
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::Iterator
+typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
 {
   auto hashResult = hashFunc (aKey);
@@ -210,7 +210,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
 
 template <class KeyT, class ValueT, class HashFuncT>
 bool
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const Iterator &anIterator)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const iterator &anIterator)
 {
   return erase (anIterator.getKey ());
 }
@@ -253,7 +253,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKe
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::pair<KeyT, ValueT> &
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterValue (const Iterator &anIter) const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterValue (const iterator &anIter) const
 {
   const std::pair<KeyT, ValueT> *keyValue = &(buckets[anIter.bucketIndex].values[anIter.valueIndex].keyValue);
   return const_cast<std::pair<KeyT, ValueT> &> (*keyValue);
@@ -261,7 +261,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterValue (const Iterator 
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::pair<KeyT, ValueT> *
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterPtr (const Iterator &anIter) const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterPtr (const iterator &anIter) const
 {
   const std::pair<KeyT, ValueT> *keyValue = &(buckets[anIter.bucketIndex].values[anIter.valueIndex].keyValue);
   return const_cast<std::pair<KeyT, ValueT> *> (keyValue);
@@ -332,7 +332,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &
 
 template <class KeyT, class ValueT, class HashFuncT>
 void
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::advanceIterator (Iterator &it) const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::advanceIterator (iterator &it) const
 {
   int nextBucketIndex = it.bucketIndex;
 
