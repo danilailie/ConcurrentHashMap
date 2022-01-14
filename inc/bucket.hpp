@@ -52,13 +52,15 @@ public:
     return values[index].getKey ();
   }
 
-  bool
-  insert (const KeyT &aKey, const ValueT &aValue, int &position)
+  std::pair<Iterator, bool>
+  insert (Map const *const map, int bucketIndex, const KeyT &aKey, const ValueT &aValue)
   {
     std::unique_lock<std::shared_mutex> lock (*bucketMutex);
 
     int foundPosition = -1;
     int insertPosition = -1;
+    std::shared_ptr<std::shared_lock<std::shared_mutex>> emptyBucketMutex;
+
     for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].getKey () == aKey)
@@ -67,30 +69,28 @@ public:
 	  }
       }
 
-    if (foundPosition == -1)
+    if (foundPosition != -1 && values[foundPosition].isAvailable ()) // there is a value with this key available
+      {
+	auto it = values[foundPosition].getIterator (map, bucketIndex, foundPosition, emptyBucketMutex);
+	return std::make_pair (it, false);
+      }
+
+    if (foundPosition == -1) // key was not found
       {
 	values.push_back (InternalValue (aKey, aValue));
 	++currentSize;
 	insertPosition = int (values.size ()) - 1;
-	position = insertPosition;
-	return true;
       }
-    else
+
+    if (foundPosition != -1 && !values[foundPosition].isAvailable ()) // key was found, but previously erased.
       {
-	if (!values[foundPosition].isAvailable ())
-	  {
-	    values[foundPosition].setAvailable ();
-	    values[foundPosition].updateValue (aValue);
-	    insertPosition = foundPosition;
-	    position = insertPosition;
-	    return true;
-	  }
-	else
-	  {
-	    position = foundPosition;
-	    return false;
-	  }
+	values[foundPosition].setAvailable ();
+	values[foundPosition].updateValue (aValue);
+	insertPosition = foundPosition;
       }
+
+    auto it = values[insertPosition].getIterator (map, bucketIndex, insertPosition, emptyBucketMutex);
+    return std::make_pair (it, true);
   }
 
   int

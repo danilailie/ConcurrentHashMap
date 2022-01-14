@@ -86,9 +86,6 @@ private:
   using BucketType = bucket<KeyT, ValueT, HashFuncT>;
 
 private:
-  std::pair<KeyT, ValueT> &getIterValue (const KeyT &aKey) const;
-  std::pair<KeyT, ValueT> &getIterValue (const iterator &anIter) const;
-  std::pair<KeyT, ValueT> *getIterPtr (const iterator &anIter) const;
   std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
   SharedLock aquireBucketLock (int bucketIndex) const;
 
@@ -186,16 +183,13 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, con
   auto hashResult = hashFunc (aKey);
   int bucketIndex = int (hashResult) % currentBucketCount;
 
-  int position = -1;
-  bool added = buckets[bucketIndex].insert (aKey, aValue, position);
-  if (added)
+  auto result = buckets[bucketIndex].insert (this, bucketIndex, aKey, aValue);
+  if (result.second)
     {
       valueCount++;
     }
 
-  auto it = position != -1 ? buckets[bucketIndex].getIterator (this, bucketIndex, aKey, false) : end ();
-
-  return std::make_pair (it, added);
+  return result;
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -239,32 +233,6 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
       return true;
     }
   return false;
-}
-
-template <class KeyT, class ValueT, class HashFuncT>
-std::pair<KeyT, ValueT> &
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterValue (const KeyT &aKey) const
-{
-  auto hashResult = hashFunc (aKey);
-  auto bucketIndex = hashResult % currentBucketCount;
-
-  return buckets[bucketIndex].getKeyValuePair (aKey);
-}
-
-template <class KeyT, class ValueT, class HashFuncT>
-std::pair<KeyT, ValueT> &
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterValue (const iterator &anIter) const
-{
-  const std::pair<KeyT, ValueT> *keyValue = &(buckets[anIter.bucketIndex].values[anIter.valueIndex].keyValue);
-  return const_cast<std::pair<KeyT, ValueT> &> (*keyValue);
-}
-
-template <class KeyT, class ValueT, class HashFuncT>
-std::pair<KeyT, ValueT> *
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getIterPtr (const iterator &anIter) const
-{
-  const std::pair<KeyT, ValueT> *keyValue = &(buckets[anIter.bucketIndex].values[anIter.valueIndex].keyValue);
-  return const_cast<std::pair<KeyT, ValueT> *> (keyValue);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -404,10 +372,10 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::rehash ()
 	  if (buckets[i].values[j].isAvailable ())
 	    {
 	      auto hashResult = hashFunc (buckets[i].values[j].keyValue.first);
-	      auto bucketIndex = int (hashResult) % currentBucketCount;
+	      int bucketIndex = int (hashResult) % currentBucketCount;
 	      auto keyValue = buckets[i].values[j].getKeyValuePair ();
 	      int valueIndex = -1;
-	      newBuckets[bucketIndex].insert (keyValue.first, keyValue.second, valueIndex);
+	      newBuckets[bucketIndex].insert (this, bucketIndex, keyValue.first, keyValue.second);
 	    }
 	}
     }

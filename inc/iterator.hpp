@@ -11,11 +11,13 @@ public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
   using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
 
-  Iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex, SharedLock aBucketLock,
-	    SharedLock aValueLock)
+  Iterator (std::pair<KeyT, ValueT> *aKeyValue, Map const *const aMap, int aBucketIndex, int aValueIndex,
+	    SharedLock aBucketLock, SharedLock aValueLock)
   {
-    key = aKey;
+    key = aKeyValue->first;
     map = aMap;
+    keyValue = aKeyValue;
+
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
     bucketLock = aBucketLock;
@@ -26,9 +28,13 @@ public:
 
   Iterator (const Iterator &other)
   {
+    key = other.key;
     map = other.map;
+    keyValue = other.keyValue;
+
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
+    bucketLock = other.bucketLock;
     valueLock = other.valueLock;
 
     increaseInstances ();
@@ -49,6 +55,7 @@ public:
 
     map = other.map;
     key = other.key;
+    keyValue = other.keyValue;
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
     valueLock = other.valueLock;
@@ -59,13 +66,13 @@ public:
   std::pair<KeyT, ValueT> &
   operator* ()
   {
-    return map->getIterValue (*this);
+    return *keyValue;
   }
 
   std::pair<KeyT, ValueT> *
   operator-> ()
   {
-    return map->getIterPtr (*this);
+    return keyValue;
   }
 
   bool
@@ -106,8 +113,6 @@ private:
     map = aMap;
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
-
-    increaseInstances ();
   }
 
   void
@@ -139,6 +144,9 @@ private:
 
   KeyT key;
   const Map *map;
+
+  std::pair<KeyT, ValueT> *keyValue;
+
   int bucketIndex;
   int valueIndex;
   SharedLock bucketLock;

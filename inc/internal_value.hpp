@@ -73,7 +73,8 @@ public:
   getIterator (Map const *const aMap, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
     auto valueLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
-    return Iterator (keyValue.first, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
+    auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
+    return Iterator (keyValueP, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
   }
 
   void
