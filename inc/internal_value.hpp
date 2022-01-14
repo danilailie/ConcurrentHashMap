@@ -1,6 +1,7 @@
 #ifndef _INTERNAL_VALUE_HPP_
 #define _INTERNAL_VALUE_HPP_
 
+#include <optional>
 #include <shared_mutex>
 
 template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
@@ -62,11 +63,15 @@ public:
     isMarkedForDelete = false;
   }
 
-  KeyT
+  std::optional<KeyT>
   getKey () const
   {
     std::shared_lock<std::shared_mutex> lock (*valueMutex);
-    return keyValue.first;
+    if (!isMarkedForDelete)
+      {
+	return keyValue.first;
+      }
+    return {};
   }
 
   Iterator
@@ -75,6 +80,20 @@ public:
     auto valueLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
     auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
     return Iterator (keyValueP, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
+  }
+
+  std::optional<Iterator>
+  getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedLock bucketLock) const
+  {
+    auto valueLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
+
+    if (!isMarkedForDelete && keyValue.first == key)
+      {
+	auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
+	return Iterator (keyValueP, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
+      }
+
+    return {};
   }
 
   void

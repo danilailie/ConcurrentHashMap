@@ -34,10 +34,11 @@ public:
     std::shared_lock<std::shared_mutex> lock (*bucketMutex);
     for (auto i = 0; i < values.size (); ++i)
       {
-	if (values[i].isAvailable ())
+	auto optionalKey = values[i].getKey ();
+	if (optionalKey)
 	  {
 	    position = i;
-	    return values[i].getKey ();
+	    return *optionalKey;
 	  }
       }
 
@@ -109,20 +110,6 @@ public:
     return -1;
   }
 
-  std::pair<KeyT, ValueT>
-  getKeyValuePair (const KeyT &aKey) const
-  {
-    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
-    for (std::size_t i = 0; i < values.size (); ++i)
-      {
-	if (values[i].compareKey (aKey))
-	  {
-	    return values[i].getKeyValuePair ();
-	  }
-      }
-    return std::pair<KeyT, ValueT> ();
-  }
-
   int
   getFirstValueIndex () const
   {
@@ -189,24 +176,22 @@ public:
   }
 
   Iterator
-  getIterator (Map const *const aMap, int bucketIndex, KeyT key, bool withBucketLock) const
+  find (Map const *const map, int bucketIndex, KeyT key, bool withBucketLock) const
   {
     auto sharedBucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
+    std::shared_ptr<std::shared_lock<std::shared_mutex>> noBucketLock;
+    auto bucketLock = withBucketLock ? sharedBucketLock : noBucketLock;
 
-    auto valueIndex = findKey (key);
-    if (valueIndex != -1)
+    for (int i = 0; i < int (values.size ()); ++i)
       {
-	std::shared_ptr<std::shared_lock<std::shared_mutex>> bucketLock;
-	if (withBucketLock)
+	auto result = values[i].getIteratorForKey (map, key, bucketIndex, i, bucketLock);
+	if (result)
 	  {
-	    bucketLock = sharedBucketLock;
+	    return *result;
 	  }
-	return values[valueIndex].getIterator (aMap, bucketIndex, valueIndex, bucketLock);
       }
-    else
-      {
-	return aMap->end ();
-      }
+
+    return map->end ();
   }
 
   int
@@ -224,19 +209,6 @@ public:
   }
 
 private:
-  int
-  findKey (const KeyT &aKey) const
-  {
-    for (int i = 0; i < int (values.size ()); ++i)
-      {
-	if (values[i].compareKey (aKey))
-	  {
-	    return i;
-	  }
-      }
-    return -1;
-  }
-
   void
   add (const std::pair<KeyT, ValueT> &aKeyValuePair)
   {

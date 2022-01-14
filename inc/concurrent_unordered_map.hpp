@@ -199,7 +199,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
   auto hashResult = hashFunc (aKey);
   int bucketIndex = int (hashResult) % currentBucketCount;
 
-  return buckets[bucketIndex].getIterator (this, bucketIndex, aKey, false);
+  return buckets[bucketIndex].find (this, bucketIndex, aKey, false);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
