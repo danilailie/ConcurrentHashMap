@@ -13,6 +13,7 @@ int
 main ()
 {
   concurrent_unordered_map<int, std::shared_ptr<int>> myMap (10007);
+  const int tenK = 10000;
 
   auto populateFunc = [&myMap] (int left, int right) {
     for (auto i = left; i < right; ++i)
@@ -48,7 +49,6 @@ main ()
   };
 
   std::vector<std::thread> workers;
-  const int tenK = 10000;
 
   auto startTimePopulate = std::chrono::steady_clock::now ();
 
