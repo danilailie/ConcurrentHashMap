@@ -374,8 +374,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::rehash ()
 	      auto hashResult = hashFunc (buckets[i].values[j].keyValue.first);
 	      int bucketIndex = int (hashResult) % currentBucketCount;
 	      auto keyValue = buckets[i].values[j].getKeyValuePair ();
-	      int valueIndex = -1;
-	      newBuckets[bucketIndex].insert (this, bucketIndex, keyValue.first, keyValue.second);
+	      newBuckets[bucketIndex].add (keyValue);
 	    }
 	}
     }

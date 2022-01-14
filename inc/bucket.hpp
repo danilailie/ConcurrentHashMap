@@ -237,6 +237,13 @@ private:
     return -1;
   }
 
+  void
+  add (const std::pair<KeyT, ValueT> &aKeyValuePair)
+  {
+    values.push_back (InternalValue (aKeyValuePair.first, aKeyValuePair.second));
+    ++currentSize;
+  }
+
   std::size_t
   eraseUnavailableValues ()
   {
