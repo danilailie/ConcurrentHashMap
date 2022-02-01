@@ -97,13 +97,16 @@ public:
   }
 
   void
-  updateIterator (Iterator &it, int bucketIndex, int valueIndex) const
+  updateIterator (Iterator &it, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto lock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
+    auto valueLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
+
+    it.keyValue = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
     it.key = keyValue.first;
     it.bucketIndex = bucketIndex;
     it.valueIndex = valueIndex;
-    it.valueLock = lock;
+    it.valueLock = valueLock;
+    it.bucketLock = bucketLock;
   }
 
   void

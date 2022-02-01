@@ -23,7 +23,7 @@ public:
   /// <summary>Constructor</summary>
   /// <param name="bucketCount">How many buckets to start with</param>
   /// <returns></returns>
-  concurrent_unordered_map (std::size_t bucketCount = 31);
+  concurrent_unordered_map (std::size_t bucketCount = 16000057);
 
   /// <summary>Gets the number of elements in the map</summary>
   /// <param></param>
