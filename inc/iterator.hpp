@@ -22,8 +22,6 @@ public:
     valueIndex = aValueIndex;
     bucketLock = aBucketLock;
     valueLock = aValueLock;
-
-    increaseInstances ();
   }
 
   Iterator (const Iterator &other)
@@ -36,13 +34,10 @@ public:
     valueIndex = other.valueIndex;
     bucketLock = other.bucketLock;
     valueLock = other.valueLock;
-
-    increaseInstances ();
   }
 
   ~Iterator ()
   {
-    decreaseInstances ();
   }
 
   Iterator &
@@ -115,29 +110,6 @@ private:
     valueIndex = aValueIndex;
   }
 
-  void
-  increaseInstances ()
-  {
-    std::unique_lock<std::mutex> lock (instancesMutex);
-    instances[map]++;
-    if (instances[map] == 1)
-      {
-	locks.insert (std::make_pair (map, std::shared_lock<std::shared_mutex> (map->rehashMutex)));
-      }
-  }
-
-  void
-  decreaseInstances ()
-  {
-    std::unique_lock<std::mutex> lock (instancesMutex);
-    instances[map]--;
-    if (instances[map] == 0)
-      {
-	instances.erase (map);
-	locks.erase (map);
-      }
-  }
-
 private:
   using Bucket = bucket<KeyT, ValueT, HashFuncT>;
   using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
@@ -152,23 +124,9 @@ private:
   SharedLock bucketLock;
   SharedLock valueLock;
 
-  static std::unordered_map<const Map *, std::size_t> instances;
-  static std::unordered_map<const Map *, std::shared_lock<std::shared_mutex>> locks;
-  static std::mutex instancesMutex;
-
   friend Map;
   friend Bucket;
   friend InternalValue;
 };
-
-template <class KeyT, class ValueT, class HashFuncT>
-std::unordered_map<const concurrent_unordered_map<KeyT, ValueT, HashFuncT> *, std::size_t>
-  Iterator<KeyT, ValueT, HashFuncT>::instances;
-
-template <class KeyT, class ValueT, class HashFuncT>
-std::unordered_map<const concurrent_unordered_map<KeyT, ValueT, HashFuncT> *, std::shared_lock<std::shared_mutex>>
-  Iterator<KeyT, ValueT, HashFuncT>::locks;
-
-template <class KeyT, class ValueT, class HashFuncT> std::mutex Iterator<KeyT, ValueT, HashFuncT>::instancesMutex;
 
 #endif
