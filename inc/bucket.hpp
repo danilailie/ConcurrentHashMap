@@ -143,7 +143,6 @@ public:
   bool
   advanceIterator (Iterator &it, int currentBucketIndex) const
   {
-    auto bucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
     int itBucketIndex = it.bucketIndex;
 
     if (itBucketIndex == currentBucketIndex) // get next valid iterator in current bucket (if exists)
@@ -152,7 +151,7 @@ public:
 
 	if (nextValueIndex != -1)
 	  {
-	    values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex, bucketLock);
+	    values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex, it.bucketLock);
 	    return true;
 	  }
 	else // need to go to next bucket
@@ -162,6 +161,7 @@ public:
       }
     else // need to return the first valid element in this bucket
       {
+	auto bucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
 	int nextValueIndex = getNextValueIndex (-1);
 
 	if (nextValueIndex == -1)

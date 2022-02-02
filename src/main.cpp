@@ -9,7 +9,7 @@
 #include "iterator.hpp"
 #include "large_object.hpp"
 
-const int oneMill = 1000000;
+const int oneMill = 100000;
 std::mutex stdMapMutex;
 
 template <typename MapT>

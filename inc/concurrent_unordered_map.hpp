@@ -223,10 +223,10 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
       erasedCount++;
     }
 
-  if (erasedCount >= valueCount / 2)
-    {
-      eraseUnavailableValues ();
-    }
+  //   if (erasedCount >= valueCount / 2)
+  //     {
+  //       eraseUnavailableValues ();
+  //     }
 
   if (position != -1)
     {
