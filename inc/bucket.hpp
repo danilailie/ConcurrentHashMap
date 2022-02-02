@@ -78,7 +78,7 @@ public:
 
     if (foundPosition == -1) // key was not found
       {
-	values.push_back (InternalValue (aKey, aValue));
+	values.emplace_back (InternalValue (aKey, aValue));
 	++currentSize;
 	insertPosition = int (values.size ()) - 1;
       }

@@ -126,7 +126,6 @@ private:
 private:
   HashFuncT hashFunc;
   std::vector<BucketType> buckets;
-  mutable std::shared_mutex rehashMutex;
   std::size_t currentBucketCount;
   std::atomic<std::size_t> valueCount;
   std::atomic<std::size_t> erasedCount;
@@ -342,23 +341,23 @@ template <class KeyT, class ValueT, class HashFuncT>
 void
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::eraseUnavailableValues ()
 {
-  if (rehashMutex.try_lock ())
-    {
-      valueCount = 0;
-      for (std::size_t i = 0; i < buckets.size (); ++i)
-	{
-	  valueCount += buckets[i].eraseUnavailableValues ();
-	}
-      erasedCount = 0;
-      rehashMutex.unlock ();
-    }
+  //   if (rehashMutex.try_lock ())
+  //     {
+  //       valueCount = 0;
+  //       for (std::size_t i = 0; i < buckets.size (); ++i)
+  // 	{
+  // 	  valueCount += buckets[i].eraseUnavailableValues ();
+  // 	}
+  //       erasedCount = 0;
+  //       rehashMutex.unlock ();
+  //     }
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
 void
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::rehash ()
 {
-  std::unique_lock<std::shared_mutex> lock (rehashMutex);
+  //   std::unique_lock<std::shared_mutex> lock (rehashMutex);
 
   currentBucketCount = getNextPrimeNumber (currentBucketCount * 2);
   std::vector<BucketType> newBuckets;

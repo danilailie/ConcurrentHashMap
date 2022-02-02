@@ -11,6 +11,7 @@
 
 const int oneMill = 100000;
 std::mutex stdMapMutex;
+std::atomic<std::size_t> valueCount = 0;
 
 template <typename MapT>
 void
@@ -93,20 +94,35 @@ timeFindOperation (MapT &map, const std::string &mapType, bool lock)
 
 template <typename MapT>
 void
-timeTraverseOperation (MapT &map, const std::string &mapType, bool lock)
+traverseInto (MapT &map, bool lock)
 {
-  auto startTime = std::chrono::steady_clock::now ();
-
   std::shared_ptr<std::unique_lock<std::mutex>> sharedLock;
   if (lock)
     {
       sharedLock = std::make_shared<std::unique_lock<std::mutex>> (stdMapMutex);
     }
 
-  std::size_t valueCount = 0;
   for (auto it = map.begin (); it != map.end (); ++it)
     {
       ++valueCount;
+    }
+}
+
+template <typename MapT>
+void
+timeTraverseOperation (MapT &map, const std::string &mapType, bool lock)
+{
+  auto startTime = std::chrono::steady_clock::now ();
+  std::vector<std::thread> workers;
+  valueCount = 0;
+
+  for (auto i = 0; i < std::thread::hardware_concurrency (); ++i)
+    {
+      workers.push_back (std::thread ([&map, i, lock] () { traverseInto (map, lock); }));
+    }
+  for (auto &worker : workers)
+    {
+      worker.join ();
     }
 
   auto endTime = std::chrono::steady_clock::now ();
@@ -158,7 +174,7 @@ int
 main ()
 {
   std::cout << "Using " << std::thread::hardware_concurrency () << " threads...\n";
-  concurrent_unordered_map<int, std::shared_ptr<int>> myMap (16000057);
+  concurrent_unordered_map<int, std::shared_ptr<int>> myMap (800011);
   std::unordered_map<int, std::shared_ptr<int>> standardMap;
 
   timeInsertOperation (myMap, "Concurrent Map", false);

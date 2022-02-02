@@ -10,34 +10,36 @@ template <class KeyT, class ValueT, class HashFuncT> class Iterator
 public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
   using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
+  using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
 
-  Iterator (std::pair<KeyT, ValueT> *aKeyValue, Map const *const aMap, int aBucketIndex, int aValueIndex,
-	    SharedLock aBucketLock, SharedLock aValueLock)
+  Iterator (InternalValue *anInternalValue, Map const *const aMap, int aBucketIndex, int aValueIndex,
+	    SharedLock aBucketLock)
   {
-    key = aKeyValue->first;
+    ++anInternalValue->iteratorCount;
+    key = anInternalValue->keyValue.first;
     map = aMap;
-    keyValue = aKeyValue;
+    internalValue = anInternalValue;
 
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
     bucketLock = aBucketLock;
-    valueLock = aValueLock;
   }
 
   Iterator (const Iterator &other)
   {
     key = other.key;
     map = other.map;
-    keyValue = other.keyValue;
+    internalValue = other.internalValue;
+    ++internalValue->iteratorCount;
 
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
     bucketLock = other.bucketLock;
-    valueLock = other.valueLock;
   }
 
   ~Iterator ()
   {
+    --(internalValue->iteratorCount);
   }
 
   Iterator &
@@ -48,12 +50,14 @@ public:
 	return *this;
       }
 
+    --internalValue->iteratorCount;
+
     map = other.map;
     key = other.key;
-    keyValue = other.keyValue;
+    internalValue = other.internalValue;
+    ++internalValue->iteratorCount;
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
-    valueLock = other.valueLock;
 
     return *this;
   }
@@ -61,13 +65,13 @@ public:
   std::pair<KeyT, ValueT> &
   operator* ()
   {
-    return *keyValue;
+    return internalValue->keyValue;
   }
 
   std::pair<KeyT, ValueT> *
   operator-> ()
   {
-    return keyValue;
+    return &(internalValue->keyValue);
   }
 
   bool
@@ -112,17 +116,15 @@ private:
 
 private:
   using Bucket = bucket<KeyT, ValueT, HashFuncT>;
-  using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
 
   KeyT key;
   const Map *map;
 
-  std::pair<KeyT, ValueT> *keyValue;
+  InternalValue *internalValue;
 
   int bucketIndex;
   int valueIndex;
   SharedLock bucketLock;
-  SharedLock valueLock;
 
   friend Map;
   friend Bucket;
