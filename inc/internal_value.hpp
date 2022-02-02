@@ -29,6 +29,7 @@ public:
       , keyValue (other.keyValue)
       , iteratorCount (other.iteratorCount.load ())
   {
+    valueMutex = std::make_unique<std::shared_mutex> ();
   }
 
   bool

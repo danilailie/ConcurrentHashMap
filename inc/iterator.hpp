@@ -39,7 +39,10 @@ public:
 
   ~Iterator ()
   {
-    --(internalValue->iteratorCount);
+    if (key != InvalidKeyValue<KeyT> ())
+      {
+	--(internalValue->iteratorCount);
+      }
   }
 
   Iterator &
@@ -50,12 +53,16 @@ public:
 	return *this;
       }
 
-    --internalValue->iteratorCount;
+    --(internalValue->iteratorCount);
 
     map = other.map;
     key = other.key;
-    internalValue = other.internalValue;
-    ++internalValue->iteratorCount;
+
+    if (key != InvalidKeyValue<KeyT> ())
+      {
+	internalValue = other.internalValue;
+	++(internalValue->iteratorCount);
+      }
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
 

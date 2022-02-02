@@ -15,9 +15,9 @@ std::atomic<std::size_t> valueCount = 0;
 
 template <typename MapT>
 void
-insertInto (MapT &map, int left, int right, bool lock)
+insertInto (MapT &map, std::size_t left, std::size_t right, bool lock)
 {
-  for (auto i = left; i < right; ++i)
+  for (int i = int(left); i < int(right); ++i)
     {
       std::shared_ptr<std::unique_lock<std::mutex>> sharedLock;
       if (lock)
@@ -30,7 +30,7 @@ insertInto (MapT &map, int left, int right, bool lock)
 
 template <typename MapT>
 void
-findInto (MapT &map, int left, int right, bool lock)
+findInto (MapT &map, std::size_t left, std::size_t right, bool lock)
 {
   for (auto i = left; i < right; ++i)
     {
@@ -39,7 +39,7 @@ findInto (MapT &map, int left, int right, bool lock)
 	{
 	  sharedLock = std::make_shared<std::unique_lock<std::mutex>> (stdMapMutex);
 	}
-      auto it = map.find (i);
+      auto it = map.find (int(i));
       assert (it != map.end ());
     }
 }
@@ -51,7 +51,7 @@ timeInsertOperation (MapT &map, const std::string &mapType, bool lock)
   std::vector<std::thread> workers;
   auto startTimePopulate = std::chrono::steady_clock::now ();
 
-  for (auto i = 0; i < std::thread::hardware_concurrency (); ++i)
+  for (std::size_t i = 0; i < std::thread::hardware_concurrency (); ++i)
     {
       workers.push_back (std::thread ([&map, i, lock] () { insertInto (map, i * oneMill, (i + 1) * oneMill, lock); }));
     }
@@ -75,7 +75,7 @@ timeFindOperation (MapT &map, const std::string &mapType, bool lock)
   std::vector<std::thread> workers;
   auto startTime = std::chrono::steady_clock::now ();
 
-  for (auto i = 0; i < std::thread::hardware_concurrency (); ++i)
+  for (std::size_t i = 0; i < std::thread::hardware_concurrency (); ++i)
     {
       workers.push_back (std::thread ([&map, i, lock] () { findInto (map, i * oneMill, (i + 1) * oneMill, lock); }));
     }
@@ -116,7 +116,7 @@ timeTraverseOperation (MapT &map, const std::string &mapType, bool lock)
   std::vector<std::thread> workers;
   valueCount = 0;
 
-  for (auto i = 0; i < std::thread::hardware_concurrency (); ++i)
+  for (std::size_t i = 0; i < std::thread::hardware_concurrency (); ++i)
     {
       workers.push_back (std::thread ([&map, i, lock] () { traverseInto (map, lock); }));
     }
@@ -133,16 +133,16 @@ timeTraverseOperation (MapT &map, const std::string &mapType, bool lock)
 
 template <typename MapT>
 void
-eraseInto (MapT &map, int left, int right, bool lock)
+eraseInto (MapT &map, std::size_t left, std::size_t right, bool lock)
 {
-  for (auto i = left; i < right; ++i)
+  for (std::size_t i = left; i < right; ++i)
     {
       std::shared_ptr<std::unique_lock<std::mutex>> sharedLock;
       if (lock)
 	{
 	  sharedLock = std::make_shared<std::unique_lock<std::mutex>> (stdMapMutex);
 	}
-      auto result = map.erase (i);
+      auto result = map.erase (int(i));
       assert (result);
     }
 }
@@ -154,7 +154,7 @@ timeEraseOperation (MapT &map, const std::string &mapType, bool lock)
   std::vector<std::thread> workers;
   auto startTime = std::chrono::steady_clock::now ();
 
-  for (auto i = 0; i < std::thread::hardware_concurrency (); ++i)
+  for (std::size_t i = 0; i < std::thread::hardware_concurrency (); ++i)
     {
       workers.push_back (std::thread ([&map, i, lock] () { eraseInto (map, i * oneMill, (i + 1) * oneMill, lock); }));
     }
