@@ -4,9 +4,9 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <map>
 #include <shared_mutex>
 #include <vector>
-#include <map>
 
 #include "bucket.hpp"
 #include "internal_value.hpp"
@@ -89,7 +89,8 @@ private:
 private:
   std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
   SharedLock aquireBucketLock (int bucketIndex) const;
-  static SharedLock getReadLockFor (std::shared_mutex *mutexAddress);
+  static SharedLock getValueReadLockFor (std::shared_mutex *mutexAddress);
+  static SharedLock getBucketReadLockFor (std::shared_mutex *mutexAddress);
 
   /// <summary>Gets the key of the first element - equivalent to begin()</summary>
   /// <param></param>
@@ -133,7 +134,10 @@ private:
   std::atomic<std::size_t> valueCount;
   std::atomic<std::size_t> erasedCount;
 
-  static thread_local std::map<std::shared_mutex *, std::weak_ptr<std::shared_lock<std::shared_mutex>>> mutex_to_lock;
+  static thread_local std::map<std::shared_mutex *, std::weak_ptr<std::shared_lock<std::shared_mutex>>>
+    value_mutex_to_lock;
+  static thread_local std::map<std::shared_mutex *, std::weak_ptr<std::shared_lock<std::shared_mutex>>>
+    bucket_mutex_to_lock;
 
   friend iterator;
   friend InternalValue;
@@ -264,20 +268,50 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::aquireBucketLock (int bucketI
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::shared_ptr<std::shared_lock<std::shared_mutex>>
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getReadLockFor (std::shared_mutex *mutexAddress)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueReadLockFor (std::shared_mutex *mutexAddress)
 {
-  auto it = mutex_to_lock.find (mutexAddress);
+  auto it = value_mutex_to_lock.find (mutexAddress);
   SharedLock result;
-  
-  if (it != mutex_to_lock.end ())
+
+  if (it != value_mutex_to_lock.end ())
     {
       result = it->second.lock ();
     }
 
   if (!result)
     {
-      result = std::make_shared<std::shared_lock<std::shared_mutex>> (*mutexAddress);
-      mutex_to_lock.insert (std::make_pair(mutexAddress, result ));
+      std::shared_ptr<std::shared_lock<std::shared_mutex>> result (new std::shared_lock<std::shared_mutex> (
+								     *mutexAddress),
+								   [mutexAddress] (auto p) {
+								     value_mutex_to_lock.erase (mutexAddress);
+								     delete p;
+								   });
+      value_mutex_to_lock.insert (std::make_pair (mutexAddress, result));
+    }
+  return result;
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+std::shared_ptr<std::shared_lock<std::shared_mutex>>
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketReadLockFor (std::shared_mutex *mutexAddress)
+{
+  auto it = bucket_mutex_to_lock.find (mutexAddress);
+  SharedLock result;
+
+  if (it != bucket_mutex_to_lock.end ())
+    {
+      result = it->second.lock ();
+    }
+
+  if (!result)
+    {
+      std::shared_ptr<std::shared_lock<std::shared_mutex>> result (new std::shared_lock<std::shared_mutex> (
+								     *mutexAddress),
+								   [mutexAddress] (auto p) {
+								     bucket_mutex_to_lock.erase (mutexAddress);
+								     delete p;
+								   });
+      bucket_mutex_to_lock.insert (std::make_pair (mutexAddress, result));
     }
   return result;
 }
@@ -410,6 +444,10 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::rehash ()
 
 template <class KeyT, class ValueT, class HashFuncT>
 thread_local std::map<std::shared_mutex *, std::weak_ptr<std::shared_lock<std::shared_mutex>>>
-  concurrent_unordered_map<KeyT, ValueT, HashFuncT>::mutex_to_lock;
+  concurrent_unordered_map<KeyT, ValueT, HashFuncT>::value_mutex_to_lock;
+
+template <class KeyT, class ValueT, class HashFuncT>
+thread_local std::map<std::shared_mutex *, std::weak_ptr<std::shared_lock<std::shared_mutex>>>
+  concurrent_unordered_map<KeyT, ValueT, HashFuncT>::bucket_mutex_to_lock;
 
 #endif
