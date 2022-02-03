@@ -102,7 +102,7 @@ public:
   }
 
 private:
-  Iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex)
+  Iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex) : keyValue (nullptr)
   {
     key = aKey;
     map = aMap;

@@ -50,7 +50,7 @@ timeInsertOperation (MapT &map, const std::string &mapType, bool lock)
   std::vector<std::thread> workers;
   auto startTimePopulate = std::chrono::steady_clock::now ();
 
-  for (auto i = 0; i < std::thread::hardware_concurrency (); ++i)
+  for (auto i = 0; i < int(std::thread::hardware_concurrency ()); ++i)
     {
       workers.push_back (std::thread ([&map, i, lock] () { insertInto (map, i * oneMill, (i + 1) * oneMill, lock); }));
     }
@@ -74,7 +74,7 @@ timeFindOperation (MapT &map, const std::string &mapType, bool lock)
   std::vector<std::thread> workers;
   auto startTime = std::chrono::steady_clock::now ();
 
-  for (auto i = 0; i < std::thread::hardware_concurrency (); ++i)
+  for (auto i = 0; i < int(std::thread::hardware_concurrency ()); ++i)
     {
       workers.push_back (std::thread ([&map, i, lock] () { findInto (map, i * oneMill, (i + 1) * oneMill, lock); }));
     }
@@ -138,7 +138,7 @@ timeEraseOperation (MapT &map, const std::string &mapType, bool lock)
   std::vector<std::thread> workers;
   auto startTime = std::chrono::steady_clock::now ();
 
-  for (auto i = 0; i < std::thread::hardware_concurrency (); ++i)
+  for (auto i = 0; i < int(std::thread::hardware_concurrency ()); ++i)
     {
       workers.push_back (std::thread ([&map, i, lock] () { eraseInto (map, i * oneMill, (i + 1) * oneMill, lock); }));
     }

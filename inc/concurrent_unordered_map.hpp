@@ -6,6 +6,7 @@
 #include <functional>
 #include <shared_mutex>
 #include <vector>
+#include <map>
 
 #include "bucket.hpp"
 #include "internal_value.hpp"
@@ -83,11 +84,12 @@ public:
 
 private:
   using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
-  using BucketType = bucket<KeyT, ValueT, HashFuncT>;
+  using Bucket = bucket<KeyT, ValueT, HashFuncT>;
 
 private:
   std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
   SharedLock aquireBucketLock (int bucketIndex) const;
+  static SharedLock getReadLockFor (std::shared_mutex *mutexAddress);
 
   /// <summary>Gets the key of the first element - equivalent to begin()</summary>
   /// <param></param>
@@ -125,13 +127,17 @@ private:
 
 private:
   HashFuncT hashFunc;
-  std::vector<BucketType> buckets;
+  std::vector<Bucket> buckets;
   mutable std::shared_mutex rehashMutex;
   std::size_t currentBucketCount;
   std::atomic<std::size_t> valueCount;
   std::atomic<std::size_t> erasedCount;
 
+  static thread_local std::map<std::shared_mutex *, std::weak_ptr<std::shared_lock<std::shared_mutex>>> mutex_to_lock;
+
   friend iterator;
+  friend InternalValue;
+  friend Bucket;
 };
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -257,6 +263,26 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::aquireBucketLock (int bucketI
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
+std::shared_ptr<std::shared_lock<std::shared_mutex>>
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getReadLockFor (std::shared_mutex *mutexAddress)
+{
+  auto it = mutex_to_lock.find (mutexAddress);
+  SharedLock result;
+  
+  if (it != mutex_to_lock.end ())
+    {
+      result = it->second.lock ();
+    }
+
+  if (!result)
+    {
+      result = std::make_shared<std::shared_lock<std::shared_mutex>> (*mutexAddress);
+      mutex_to_lock.insert (std::make_pair(mutexAddress, result ));
+    }
+  return result;
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
 KeyT
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getFirstKey () const
 {
@@ -361,7 +387,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::rehash ()
   std::unique_lock<std::shared_mutex> lock (rehashMutex);
 
   currentBucketCount = getNextPrimeNumber (currentBucketCount * 2);
-  std::vector<BucketType> newBuckets;
+  std::vector<Bucket> newBuckets;
   newBuckets.resize (currentBucketCount);
 
   for (auto i = 0; i < buckets.size (); ++i)
@@ -381,5 +407,9 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::rehash ()
 
   buckets = std::move (newBuckets);
 }
+
+template <class KeyT, class ValueT, class HashFuncT>
+thread_local std::map<std::shared_mutex *, std::weak_ptr<std::shared_lock<std::shared_mutex>>>
+  concurrent_unordered_map<KeyT, ValueT, HashFuncT>::mutex_to_lock;
 
 #endif

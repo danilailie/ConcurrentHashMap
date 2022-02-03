@@ -24,14 +24,14 @@ public:
   std::size_t
   getSize () const
   {
-    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    auto bucketLock = Map::getReadLockFor (&(*bucketMutex));
     return currentSize;
   }
 
   KeyT
   getFirstKey (int &position) const
   {
-    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    auto bucketLock = Map::getReadLockFor (&(*bucketMutex));
     for (auto i = 0; i < values.size (); ++i)
       {
 	auto optionalKey = values[i].getKey ();
@@ -49,7 +49,7 @@ public:
   KeyT
   getKeyAt (std::size_t index) const
   {
-    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    auto bucketLock = Map::getReadLockFor (&(*bucketMutex));
     return values[index].getKey ();
   }
 
@@ -113,7 +113,7 @@ public:
   int
   getFirstValueIndex () const
   {
-    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    auto bucketLock = Map::getReadLockFor (&(*bucketMutex));
     for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i].isAvailable ())
@@ -127,7 +127,7 @@ public:
   Iterator
   begin (Map const *const aMap, int bucketIndex) const
   {
-    auto bucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
+    auto bucketLock = Map::getReadLockFor (&(*bucketMutex));
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
@@ -161,7 +161,7 @@ public:
       }
     else // need to return the first valid element in this bucket
       {
-	auto bucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
+	auto bucketLock = Map::getReadLockFor (&(*bucketMutex));
 	int nextValueIndex = getNextValueIndex (-1);
 
 	if (nextValueIndex == -1)
@@ -178,7 +178,7 @@ public:
   Iterator
   find (Map const *const map, int bucketIndex, KeyT key, bool withBucketLock) const
   {
-    auto sharedBucketLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*bucketMutex);
+    auto sharedBucketLock = Map::getReadLockFor (&(*bucketMutex));
     std::shared_ptr<std::shared_lock<std::shared_mutex>> noBucketLock;
     auto bucketLock = withBucketLock ? sharedBucketLock : noBucketLock;
 
@@ -197,7 +197,7 @@ public:
   int
   getNextValueIndex (int index) const
   {
-    std::shared_lock<std::shared_mutex> lock (*bucketMutex);
+    auto valueLock = Map::getReadLockFor (&(*bucketMutex));
     for (int i = index + 1; i < int (values.size ()); ++i)
       {
 	if (values[i].isAvailable ())
