@@ -15,7 +15,7 @@ public:
   Iterator (InternalValue *anInternalValue, Map const *const aMap, int aBucketIndex, int aValueIndex,
 	    SharedLock aBucketLock)
   {
-    ++anInternalValue->iteratorCount;
+    anInternalValue->increaseIteratorCount ();
     key = anInternalValue->keyValue.first;
     map = aMap;
     internalValue = anInternalValue;
@@ -30,7 +30,7 @@ public:
     key = other.key;
     map = other.map;
     internalValue = other.internalValue;
-    ++internalValue->iteratorCount;
+    internalValue->increaseIteratorCount ();
 
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
@@ -41,7 +41,7 @@ public:
   {
     if (key != InvalidKeyValue<KeyT> ())
       {
-	--(internalValue->iteratorCount);
+	internalValue->decreaseIteratorCount ();
       }
   }
 
@@ -53,7 +53,7 @@ public:
 	return *this;
       }
 
-    --(internalValue->iteratorCount);
+    internalValue->decreaseIteratorCount ();
 
     map = other.map;
     key = other.key;
@@ -61,7 +61,7 @@ public:
     if (key != InvalidKeyValue<KeyT> ())
       {
 	internalValue = other.internalValue;
-	++(internalValue->iteratorCount);
+	internalValue->increaseIteratorCount ();
       }
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;

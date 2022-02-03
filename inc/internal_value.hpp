@@ -25,7 +25,7 @@ public:
   }
 
   internal_value (const internal_value &other)
-      : isMarkedForDelete (other.isMarkedForDelete)
+      : isMarkedForDelete (other.isMarkedForDelete.load ())
       , keyValue (other.keyValue)
       , iteratorCount (other.iteratorCount.load ())
   {
@@ -35,7 +35,7 @@ public:
   bool
   compareKey (const KeyT &aKey) const
   {
-    std::shared_lock<std::shared_mutex> lock (*valueMutex);
+    auto valueLock = sharedValueLock;
     if (!isMarkedForDelete)
       {
 	return keyValue.first == aKey;
@@ -46,35 +46,33 @@ public:
   std::pair<KeyT, ValueT>
   getKeyValuePair () const
   {
-    std::shared_lock<std::shared_mutex> lock (*valueMutex);
+    auto valueLock = sharedValueLock;
     return keyValue;
   }
 
   void
   erase ()
   {
-    std::unique_lock<std::shared_mutex> lock (*valueMutex);
     isMarkedForDelete = true;
   }
 
   bool
   isAvailable () const
   {
-    std::shared_lock<std::shared_mutex> lock (*valueMutex);
     return !isMarkedForDelete;
   }
 
   void
   setAvailable ()
   {
-    std::unique_lock<std::shared_mutex> lock (*valueMutex);
     isMarkedForDelete = false;
   }
 
   std::optional<KeyT>
   getKey () const
   {
-    std::shared_lock<std::shared_mutex> lock (*valueMutex);
+    auto valueLock = sharedValueLock;
+
     if (!isMarkedForDelete)
       {
 	return keyValue.first;
@@ -85,7 +83,7 @@ public:
   Iterator
   getIterator (Map const *const aMap, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = std::make_unique<std::shared_lock<std::shared_mutex>> (*valueMutex);
+    auto valueLock = sharedValueLock;
 
     auto self = const_cast<internal_value<KeyT, ValueT, HashFuncT> *> (this);
     return Iterator (self, aMap, bucketIndex, valueIndex, bucketLock);
@@ -94,7 +92,7 @@ public:
   std::optional<Iterator>
   getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = std::make_unique<std::shared_lock<std::shared_mutex>> (*valueMutex);
+    auto valueLock = sharedValueLock;
 
     if (!isMarkedForDelete && keyValue.first == key)
       {
@@ -108,7 +106,8 @@ public:
   void
   updateIterator (Iterator &it, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = std::make_unique<std::shared_lock<std::shared_mutex>> (*valueMutex);
+    auto valueLock = sharedValueLock;
+
     it.internalValue->iteratorCount--;
     it.internalValue = const_cast<internal_value<KeyT, ValueT, HashFuncT> *> (this);
     it.key = keyValue.first;
@@ -137,10 +136,35 @@ public:
   }
 
 private:
+  void
+  increaseIteratorCount ()
+  {
+    ++iteratorCount;
+    if (iteratorCount == 1)
+      {
+	sharedValueLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
+      }
+  }
+
+  void
+  decreaseIteratorCount ()
+  {
+    --iteratorCount;
+    assert (iteratorCount >= 0);
+
+    if (iteratorCount == 0)
+      {
+	sharedValueLock.reset ();
+      }
+  }
+
+private:
   std::unique_ptr<std::shared_mutex> valueMutex;
-  bool isMarkedForDelete;
+  std::shared_ptr<std::shared_lock<std::shared_mutex>> sharedValueLock;
+
+  std::atomic<bool> isMarkedForDelete;
   std::pair<KeyT, ValueT> keyValue;
-  std::atomic<std::size_t> iteratorCount = 0;
+  std::atomic<int> iteratorCount = 0;
 
   friend Map;
   friend Iterator;
