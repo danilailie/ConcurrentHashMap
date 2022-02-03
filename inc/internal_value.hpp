@@ -35,7 +35,7 @@ public:
   bool
   compareKey (const KeyT &aKey) const
   {
-    auto valueLock = sharedValueLock;
+    auto valueLock = getSharedLock();
     if (!isMarkedForDelete)
       {
 	return keyValue.first == aKey;
@@ -46,7 +46,7 @@ public:
   std::pair<KeyT, ValueT>
   getKeyValuePair () const
   {
-    auto valueLock = sharedValueLock;
+    auto valueLock = getSharedLock();
     return keyValue;
   }
 
@@ -71,7 +71,7 @@ public:
   std::optional<KeyT>
   getKey () const
   {
-    auto valueLock = sharedValueLock;
+    auto valueLock = getSharedLock();
 
     if (!isMarkedForDelete)
       {
@@ -83,7 +83,7 @@ public:
   Iterator
   getIterator (Map const *const aMap, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = sharedValueLock;
+    auto valueLock = getSharedLock();
 
     auto self = const_cast<internal_value<KeyT, ValueT, HashFuncT> *> (this);
     return Iterator (self, aMap, bucketIndex, valueIndex, bucketLock);
@@ -92,7 +92,7 @@ public:
   std::optional<Iterator>
   getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = sharedValueLock;
+    auto valueLock = getSharedLock();
 
     if (!isMarkedForDelete && keyValue.first == key)
       {
@@ -106,10 +106,11 @@ public:
   void
   updateIterator (Iterator &it, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = sharedValueLock;
+    auto valueLock = getSharedLock();
 
-    it.internalValue->iteratorCount--;
+    it.internalValue->decreaseIteratorCount();
     it.internalValue = const_cast<internal_value<KeyT, ValueT, HashFuncT> *> (this);
+    it.internalValue->increaseIteratorCount ();
     it.key = keyValue.first;
     it.bucketIndex = bucketIndex;
     it.valueIndex = valueIndex;
@@ -158,9 +159,18 @@ private:
       }
   }
 
+  SharedLock getSharedLock () const
+  {
+    if (!sharedValueLock)
+      {
+	sharedValueLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
+      }
+    return sharedValueLock;
+  }
+
 private:
   std::unique_ptr<std::shared_mutex> valueMutex;
-  std::shared_ptr<std::shared_lock<std::shared_mutex>> sharedValueLock;
+  mutable std::shared_ptr<std::shared_lock<std::shared_mutex>> sharedValueLock;
 
   std::atomic<bool> isMarkedForDelete;
   std::pair<KeyT, ValueT> keyValue;

@@ -119,6 +119,7 @@ private:
     map = aMap;
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
+    internalValue = nullptr;
   }
 
 private:
