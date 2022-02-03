@@ -280,12 +280,12 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueReadLockFor (std::sha
 
   if (!result)
     {
-      std::shared_ptr<std::shared_lock<std::shared_mutex>> result (new std::shared_lock<std::shared_mutex> (
-								     *mutexAddress),
-								   [mutexAddress] (auto p) {
-								     value_mutex_to_lock.erase (mutexAddress);
-								     delete p;
-								   });
+      std::shared_ptr<std::shared_lock<std::shared_mutex>> result (
+	new std::shared_lock<std::shared_mutex> (*mutexAddress),
+	[mutexAddress] (std::shared_lock<std::shared_mutex> *p) {
+	  value_mutex_to_lock.erase (mutexAddress);
+	  delete p;
+	});
       value_mutex_to_lock.insert (std::make_pair (mutexAddress, result));
     }
   return result;
@@ -305,12 +305,12 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketReadLockFor (std::sh
 
   if (!result)
     {
-      std::shared_ptr<std::shared_lock<std::shared_mutex>> result (new std::shared_lock<std::shared_mutex> (
-								     *mutexAddress),
-								   [mutexAddress] (auto p) {
-								     bucket_mutex_to_lock.erase (mutexAddress);
-								     delete p;
-								   });
+      std::shared_ptr<std::shared_lock<std::shared_mutex>> result (
+	new std::shared_lock<std::shared_mutex> (*mutexAddress),
+	[mutexAddress] (std::shared_lock<std::shared_mutex> *p) {
+	  bucket_mutex_to_lock.erase (mutexAddress);
+	  delete p;
+	});
       bucket_mutex_to_lock.insert (std::make_pair (mutexAddress, result));
     }
   return result;
