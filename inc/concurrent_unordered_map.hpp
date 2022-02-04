@@ -280,14 +280,16 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueReadLockFor (std::sha
 
   if (!result)
     {
-      std::shared_ptr<std::shared_lock<std::shared_mutex>> result (
-	new std::shared_lock<std::shared_mutex> (*mutexAddress),
-	[mutexAddress] (std::shared_lock<std::shared_mutex> *p) {
-	  value_mutex_to_lock.erase (mutexAddress);
-	  delete p;
-	});
-      value_mutex_to_lock.insert (std::make_pair (mutexAddress, result));
+      result =
+	std::shared_ptr<std::shared_lock<std::shared_mutex>> (new std::shared_lock<std::shared_mutex> (*mutexAddress),
+							      [mutexAddress] (std::shared_lock<std::shared_mutex> *p) {
+								value_mutex_to_lock.erase (mutexAddress);
+								delete p;
+							      });
+      auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, result));
+      assert (resultInsert.second);
     }
+  assert (result);
   return result;
 }
 
