@@ -27,7 +27,7 @@ public:
   bool
   compareKey (const KeyT &aKey) const
   {
-    std::shared_lock<std::shared_mutex> lock (*valueMutex);
+    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
     if (!isMarkedForDelete)
       {
 	return keyValue.first == aKey;
@@ -38,7 +38,7 @@ public:
   std::pair<KeyT, ValueT>
   getKeyValuePair () const
   {
-    std::shared_lock<std::shared_mutex> lock (*valueMutex);
+    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
     return keyValue;
   }
 
@@ -52,7 +52,7 @@ public:
   bool
   isAvailable () const
   {
-    std::shared_lock<std::shared_mutex> lock (*valueMutex);
+    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
     return !isMarkedForDelete;
   }
 
@@ -66,7 +66,7 @@ public:
   std::optional<KeyT>
   getKey () const
   {
-    std::shared_lock<std::shared_mutex> lock (*valueMutex);
+    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
     if (!isMarkedForDelete)
       {
 	return keyValue.first;
@@ -77,7 +77,7 @@ public:
   Iterator
   getIterator (Map const *const aMap, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
+    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
     auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
     return Iterator (keyValueP, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
   }
@@ -85,7 +85,7 @@ public:
   std::optional<Iterator>
   getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
+    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
 
     if (!isMarkedForDelete && keyValue.first == key)
       {
@@ -99,7 +99,7 @@ public:
   void
   updateIterator (Iterator &it, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = std::make_shared<std::shared_lock<std::shared_mutex>> (*valueMutex);
+    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
 
     it.keyValue = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
     it.key = keyValue.first;
@@ -114,18 +114,6 @@ public:
   {
     std::unique_lock<std::shared_mutex> lock (*valueMutex);
     keyValue.second = newValue;
-  }
-
-  bool
-  lock () const
-  {
-    return valueMutex->try_lock_shared ();
-  }
-
-  void
-  unlock () const
-  {
-    return valueMutex->unlock_shared ();
   }
 
 private:
