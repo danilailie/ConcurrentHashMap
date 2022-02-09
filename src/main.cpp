@@ -43,6 +43,16 @@ findInto (MapT &map, int left, int right, bool lock)
     }
 }
 
+void
+findIntoLock (concurrent_unordered_map<int, std::shared_ptr<int>> &map, int left, int right)
+{
+  for (auto i = left; i < right; ++i)
+    {
+      auto it = map.findAndLock (i);
+      assert (it != map.end ());
+    }
+}
+
 template <typename MapT>
 void
 timeInsertOperation (MapT &map, const std::string &mapType, bool lock)
@@ -86,6 +96,30 @@ timeFindOperation (MapT &map, const std::string &mapType, bool lock)
 
   auto endTime = std::chrono::steady_clock::now ();
   std::cout << mapType << " - Find Duration: "
+	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime).count ()
+	    << " milliseconds\n";
+  workers.clear ();
+}
+
+void
+timeFindLockOperation (concurrent_unordered_map<int, std::shared_ptr<int>> &map)
+{
+  std::vector<std::thread> workers;
+  auto startTime = std::chrono::steady_clock::now ();
+
+  for (auto i = 0; i < int (std::thread::hardware_concurrency ()); ++i)
+    {
+      workers.push_back (std::thread ([&map, i] () { findIntoLock (map, i * oneMill, (i + 1) * oneMill); }));
+    }
+
+  for (auto &worker : workers)
+    {
+      worker.join ();
+    }
+
+  auto endTime = std::chrono::steady_clock::now ();
+  std::cout << "Concurrent Map"
+	    << " - Find Lock Duration: "
 	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime).count ()
 	    << " milliseconds\n";
   workers.clear ();
@@ -166,6 +200,7 @@ main ()
 
   timeFindOperation (myMap, "Concurrent Map", false);
   timeFindOperation (standardMap, "Standard Map", true);
+  timeFindLockOperation (myMap);
 
   timeTraverseOperation (myMap, "Concurrent Map", false);
   timeTraverseOperation (standardMap, "Standard Map", true);
