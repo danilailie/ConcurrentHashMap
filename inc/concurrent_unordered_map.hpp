@@ -67,6 +67,11 @@ public:
   /// <returns>Iterator to the found element (will be end() if key is not found).</returns>
   iterator find (const KeyT &aKey) const;
 
+  /// <summary>Finds an element with a key in the map.</summary>
+  /// <param name="aKey">The key</param>
+  /// <returns>Write-locked iterator to the found element (will be end() if key is not found).</returns>
+  iterator findAndLock (const KeyT &aKey) const;
+
   /// <summary>Erases the element pointed by the Iterator. Invalidates the Iterator</summary>
   /// <param name="anIterator">The Iterator</param>
   /// <returns>True if element was present in the map (IE Iterator was valid).</returns>
@@ -200,6 +205,16 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, con
 template <class KeyT, class ValueT, class HashFuncT>
 typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
+{
+  auto hashResult = hashFunc (aKey);
+  int bucketIndex = int (hashResult) % currentBucketCount;
+
+  return buckets[bucketIndex].find (this, bucketIndex, aKey, false, true);
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::findAndLock (const KeyT &aKey) const
 {
   auto hashResult = hashFunc (aKey);
   int bucketIndex = int (hashResult) % currentBucketCount;

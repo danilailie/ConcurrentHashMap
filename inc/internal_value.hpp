@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <shared_mutex>
+#include <variant>
 
 template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 
@@ -12,6 +13,8 @@ public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
   using Iterator = typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator;
   using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
+  using WriteLock = std::shared_ptr<std::unique_lock<std::shared_mutex>>;
+  using VariandLock = std::variant<SharedLock, WriteLock>;
 
   internal_value (const KeyT &aKey, const ValueT &aValue) : isMarkedForDelete (false), keyValue (aKey, aValue)
   {
@@ -83,9 +86,18 @@ public:
   }
 
   std::optional<Iterator>
-  getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedLock bucketLock) const
+  getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedLock bucketLock,
+		     bool isWriteValueLock = false) const
   {
-    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
+    VariandLock valueLock;
+    if (isWriteValueLock)
+      {
+	valueLock = std::make_shared<std::unique_lock<std::shared_mutex>> (*valueMutex);
+      }
+    else
+      {
+	valueLock = Map::getValueReadLockFor (&(*valueMutex));
+      }
 
     if (!isMarkedForDelete && keyValue.first == key)
       {
