@@ -21,8 +21,7 @@ public:
     valueMutex = std::make_unique<std::shared_mutex> ();
   }
 
-  internal_value (const std::pair<KeyT, ValueT> &aKeyValuePair)
-      : isMarkedForDelete (false), keyValue (aKeyValuePair.first, aKeyValuePair.second)
+  internal_value (const std::pair<KeyT, ValueT> &aKeyValuePair) : isMarkedForDelete (false), keyValue (aKeyValuePair)
   {
     valueMutex = std::make_unique<std::shared_mutex> ();
   }
@@ -78,19 +77,29 @@ public:
   }
 
   Iterator
-  getIterator (Map const *const aMap, int bucketIndex, int valueIndex, SharedLock bucketLock) const
+  getIterator (Map const *const aMap, int bucketIndex, int valueIndex, SharedLock bucketLock,
+	       bool isWriteValueLocked = false) const
   {
-    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
+    VariandLock valueLock;
+    if (isWriteValueLocked)
+      {
+	valueLock = std::make_shared<std::unique_lock<std::shared_mutex>> (*valueMutex);
+      }
+    else
+      {
+	valueLock = Map::getValueReadLockFor (&(*valueMutex));
+      }
+
     auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
     return Iterator (keyValueP, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
   }
 
   std::optional<Iterator>
   getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedLock bucketLock,
-		     bool isWriteValueLock = false) const
+		     bool isWriteValueLocked = false) const
   {
     VariandLock valueLock;
-    if (isWriteValueLock)
+    if (isWriteValueLocked)
       {
 	valueLock = std::make_shared<std::unique_lock<std::shared_mutex>> (*valueMutex);
       }

@@ -54,7 +54,7 @@ public:
   /// <summary>Inserts a key-value pair into the map</summary>
   /// <param name="aKeyValuePair">The pair to be inserted</param>
   /// <returns>A pair containing an Iterator (can be end) and a bool result, true if operation has succeded.</returns>
-  std::pair<iterator, bool> insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair);
+  std::pair<iterator, bool> insert (const std::pair<KeyT, ValueT> &aKeyValuePair);
 
   /// <summary>Inserts a key and a value into the map</summary>
   /// <param name="aKey">The key</param>
@@ -181,9 +181,18 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::end () const
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::pair<typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator, bool>
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (std::pair<const KeyT &, const ValueT &> aKeyValuePair)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const std::pair<KeyT, ValueT> &aKeyValuePair)
 {
-  return insert (aKeyValuePair.first, aKeyValuePair.second);
+  auto hashResult = hashFunc (aKeyValuePair.first);
+  int bucketIndex = int (hashResult) % currentBucketCount;
+
+  auto result = buckets[bucketIndex].insert (this, bucketIndex, aKeyValuePair, true);
+  if (result.second)
+    {
+      valueCount++;
+    }
+
+  return result;
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -193,7 +202,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, con
   auto hashResult = hashFunc (aKey);
   int bucketIndex = int (hashResult) % currentBucketCount;
 
-  auto result = buckets[bucketIndex].insert (this, bucketIndex, aKey, aValue);
+  auto result = buckets[bucketIndex].insert (this, bucketIndex, std::make_pair (aKey, aValue));
   if (result.second)
     {
       valueCount++;
