@@ -29,7 +29,7 @@ public:
   /// <summary>Gets the number of elements in the map</summary>
   /// <param></param>
   /// <returns></returns>
-  std::size_t getSize () const;
+  std::size_t size () const;
 
   /// <summary></summary>
   /// <param></param>
@@ -153,7 +153,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::concurrent_unordered_map (std
 
 template <class KeyT, class ValueT, class HashFuncT>
 std::size_t
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getSize () const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::size () const
 {
   return valueCount - erasedCount;
 }
