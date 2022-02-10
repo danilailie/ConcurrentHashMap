@@ -4,6 +4,7 @@
 #include <memory>
 #include <thread>
 #include <unordered_map>
+#include <utility>
 
 #include "concurrent_unordered_map.hpp"
 #include "iterator.hpp"
@@ -38,7 +39,7 @@ findInto (MapT &map, int left, int right, bool lock)
 	{
 	  sharedLock = std::make_shared<std::unique_lock<std::mutex>> (stdMapMutex);
 	}
-      auto it = map.find (i);
+      auto it = std::as_const (map).find (i);
       assert (it != map.end ());
     }
 }
@@ -48,7 +49,7 @@ findIntoLock (concurrent_unordered_map<int, std::shared_ptr<int>> &map, int left
 {
   for (auto i = left; i < right; ++i)
     {
-      auto it = map.findAndLock (i);
+      auto it = map.find (i);
       assert (it != map.end ());
     }
 }

@@ -75,13 +75,13 @@ public:
   }
 
   bool
-  operator== (const Iterator &another)
+  operator== (const Iterator &another) const
   {
     return map == another.map && key == another.key;
   }
 
   bool
-  operator!= (const Iterator &other)
+  operator!= (const Iterator &other) const
   {
     return map != other.map || key != other.key;
   }

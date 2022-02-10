@@ -65,12 +65,12 @@ public:
   /// <summary>Finds an element with a key in the map.</summary>
   /// <param name="aKey">The key</param>
   /// <returns>Iterator to the found element (will be end() if key is not found).</returns>
-  iterator find (const KeyT &aKey) const;
+  iterator find (const KeyT &aKey);
 
   /// <summary>Finds an element with a key in the map.</summary>
   /// <param name="aKey">The key</param>
   /// <returns>Write-locked iterator to the found element (will be end() if key is not found).</returns>
-  iterator findAndLock (const KeyT &aKey) const;
+  const_iterator find (const KeyT &aKey) const;
 
   /// <summary>Erases the element pointed by the Iterator. Invalidates the Iterator</summary>
   /// <param name="anIterator">The Iterator</param>
@@ -212,7 +212,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, con
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
-typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
+typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::const_iterator
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
 {
   auto hashResult = hashFunc (aKey);
@@ -223,7 +223,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
 
 template <class KeyT, class ValueT, class HashFuncT>
 typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::findAndLock (const KeyT &aKey) const
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey)
 {
   auto hashResult = hashFunc (aKey);
   int bucketIndex = int (hashResult) % currentBucketCount;
