@@ -96,7 +96,7 @@ public:
 
   std::optional<Iterator>
   getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedLock bucketLock,
-		     bool isWriteValueLocked = false) const
+		     bool isWriteValueLocked) const
   {
     VariandLock valueLock;
     if (isWriteValueLocked)

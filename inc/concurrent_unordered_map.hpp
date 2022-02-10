@@ -218,7 +218,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
   auto hashResult = hashFunc (aKey);
   int bucketIndex = int (hashResult) % currentBucketCount;
 
-  return buckets[bucketIndex].find (this, bucketIndex, aKey, false, true);
+  return buckets[bucketIndex].find (this, bucketIndex, aKey, false, false);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -228,7 +228,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::findAndLock (const KeyT &aKey
   auto hashResult = hashFunc (aKey);
   int bucketIndex = int (hashResult) % currentBucketCount;
 
-  return buckets[bucketIndex].find (this, bucketIndex, aKey, false);
+  return buckets[bucketIndex].find (this, bucketIndex, aKey, false, true);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
