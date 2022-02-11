@@ -15,6 +15,12 @@ public:
   using WriteLock = std::shared_ptr<std::unique_lock<std::shared_mutex>>;
   using VariandLock = std::variant<SharedLock, WriteLock>;
 
+  enum class ValueLockType
+  {
+    read = 0,
+    write
+  };
+
   Iterator (std::pair<KeyT, ValueT> *aKeyValue, Map const *const aMap, int aBucketIndex, int aValueIndex,
 	    SharedLock aBucketLock, VariandLock aValueLock)
   {
@@ -26,6 +32,7 @@ public:
     valueIndex = aValueIndex;
     bucketLock = aBucketLock;
     valueLock = aValueLock;
+    valueLockType = isWriteLocked () ? ValueLockType::write : ValueLockType::read;
   }
 
   Iterator (const Iterator &other)
@@ -38,6 +45,7 @@ public:
     valueIndex = other.valueIndex;
     bucketLock = other.bucketLock;
     valueLock = other.valueLock;
+    valueLockType = other.valueLockType;
   }
 
   ~Iterator ()
@@ -58,6 +66,7 @@ public:
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
     valueLock = other.valueLock;
+    valueLockType = other.valueLockType;
 
     return *this;
   }
@@ -105,12 +114,6 @@ public:
     return tmp;
   }
 
-  bool
-  isWriteLocked () const
-  {
-    return std::get_if<WriteLock> (&valueLock);
-  }
-
 private:
   Iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex) : keyValue (nullptr)
   {
@@ -118,6 +121,12 @@ private:
     map = aMap;
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
+  }
+
+  bool
+  isWriteLocked () const
+  {
+    return std::get_if<WriteLock> (&valueLock);
   }
 
 private:
@@ -133,6 +142,7 @@ private:
   int valueIndex;
   SharedLock bucketLock;
   VariandLock valueLock;
+  ValueLockType valueLockType;
 
   friend Map;
   friend Bucket;
