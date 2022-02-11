@@ -17,7 +17,8 @@ template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class con
 public:
   using iterator = Iterator<KeyT, ValueT, HashFuncT>;
   using const_iterator = const Iterator<KeyT, ValueT, HashFuncT>;
-  using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
+  using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
+  using SharedWriteLock = std::shared_ptr<std::unique_lock<std::shared_mutex>>;
   using UniqueSharedLock = std::unique_ptr<std::shared_lock<std::shared_mutex>>;
 
 public:
@@ -93,9 +94,10 @@ private:
 
 private:
   std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
-  SharedLock aquireBucketLock (int bucketIndex) const;
-  static SharedLock getValueReadLockFor (std::shared_mutex *mutexAddress);
-  static SharedLock getBucketReadLockFor (std::shared_mutex *mutexAddress);
+  SharedReadLock aquireBucketLock (int bucketIndex) const;
+  static SharedReadLock getValueReadLockFor (std::shared_mutex *mutexAddress);
+  static SharedWriteLock getValueWriteLockFor (std::shared_mutex *mutexAddress);
+  static SharedReadLock getBucketReadLockFor (std::shared_mutex *mutexAddress);
 
   /// <summary>Gets the key of the first element - equivalent to begin()</summary>
   /// <param></param>
@@ -293,7 +295,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueReadLockFor (std::sha
     value_mutex_to_lock;
 
   auto it = value_mutex_to_lock.find (mutexAddress);
-  SharedLock result;
+  SharedReadLock result;
 
   if (it != value_mutex_to_lock.end ())
     {
@@ -314,6 +316,34 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueReadLockFor (std::sha
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
+std::shared_ptr<std::unique_lock<std::shared_mutex>>
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueWriteLockFor (std::shared_mutex *mutexAddress)
+{
+  static thread_local std::map<std::shared_mutex *, std::weak_ptr<std::unique_lock<std::shared_mutex>>>
+    value_mutex_to_lock;
+
+  auto it = value_mutex_to_lock.find (mutexAddress);
+  SharedWriteLock result;
+
+  if (it != value_mutex_to_lock.end ())
+    {
+      result = it->second.lock ();
+    }
+
+  if (!result)
+    {
+      result =
+	std::shared_ptr<std::unique_lock<std::shared_mutex>> (new std::unique_lock<std::shared_mutex> (*mutexAddress),
+							      [mutexAddress] (std::unique_lock<std::shared_mutex> *p) {
+								value_mutex_to_lock.erase (mutexAddress);
+								delete p;
+							      });
+      auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, result));
+    }
+  return result;
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
 std::shared_ptr<std::shared_lock<std::shared_mutex>>
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketReadLockFor (std::shared_mutex *mutexAddress)
 {
@@ -321,7 +351,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketReadLockFor (std::sh
     bucket_mutex_to_lock;
 
   auto it = bucket_mutex_to_lock.find (mutexAddress);
-  SharedLock result;
+  SharedReadLock result;
 
   if (it != bucket_mutex_to_lock.end ())
     {

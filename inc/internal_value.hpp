@@ -83,7 +83,7 @@ public:
     VariandLock valueLock;
     if (isWriteValueLocked)
       {
-	valueLock = std::make_shared<std::unique_lock<std::shared_mutex>> (*valueMutex);
+	valueLock = Map::getValueWriteLockFor (&(*valueMutex));
       }
     else
       {
@@ -101,7 +101,7 @@ public:
     VariandLock valueLock;
     if (isWriteValueLocked)
       {
-	valueLock = std::make_shared<std::unique_lock<std::shared_mutex>> (*valueMutex);
+	valueLock = Map::getValueWriteLockFor (&(*valueMutex));
       }
     else
       {
