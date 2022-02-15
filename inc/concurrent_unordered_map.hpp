@@ -293,6 +293,7 @@ std::variant<std::shared_ptr<std::shared_lock<std::shared_mutex>>, std::shared_p
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_mutex *mutexAddress,
 								    ValueLockType lockType)
 {
+  // Brain melt allert! Proceed at your own risk!
   using ReadLock = std::weak_ptr<std::shared_lock<std::shared_mutex>>;
   using WriteLock = std::weak_ptr<std::unique_lock<std::shared_mutex>>;
   using VariantLock = std::variant<ReadLock, WriteLock>;
