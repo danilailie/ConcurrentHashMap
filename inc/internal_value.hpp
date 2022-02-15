@@ -5,6 +5,8 @@
 #include <shared_mutex>
 #include <variant>
 
+#include "unordered_map_utils.hpp"
+
 template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 
 template <class KeyT, class ValueT, class HashFuncT> class internal_value
@@ -29,7 +31,7 @@ public:
   bool
   compareKey (const KeyT &aKey) const
   {
-    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
     if (!isMarkedForDelete)
       {
 	return keyValue.first == aKey;
@@ -40,7 +42,7 @@ public:
   std::pair<KeyT, ValueT>
   getKeyValuePair () const
   {
-    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
     return keyValue;
   }
 
@@ -54,7 +56,7 @@ public:
   bool
   isAvailable () const
   {
-    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
     return !isMarkedForDelete;
   }
 
@@ -68,7 +70,7 @@ public:
   std::optional<KeyT>
   getKey () const
   {
-    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
     if (!isMarkedForDelete)
       {
 	return keyValue.first;
@@ -83,11 +85,11 @@ public:
     VariandLock valueLock;
     if (isWriteValueLocked)
       {
-	valueLock = Map::getValueWriteLockFor (&(*valueMutex));
+	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::write);
       }
     else
       {
-	valueLock = Map::getValueReadLockFor (&(*valueMutex));
+	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
       }
 
     auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
@@ -96,17 +98,9 @@ public:
 
   std::optional<Iterator>
   getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedLock bucketLock,
-		     bool isWriteValueLocked) const
+		     ValueLockType valueLockType) const
   {
-    VariandLock valueLock;
-    if (isWriteValueLocked)
-      {
-	valueLock = Map::getValueWriteLockFor (&(*valueMutex));
-      }
-    else
-      {
-	valueLock = Map::getValueReadLockFor (&(*valueMutex));
-      }
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), valueLockType);
 
     if (!isMarkedForDelete && keyValue.first == key)
       {
@@ -120,7 +114,7 @@ public:
   void
   updateIterator (Iterator &it, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = Map::getValueReadLockFor (&(*valueMutex));
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
 
     it.keyValue = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
     it.key = keyValue.first;

@@ -177,7 +177,7 @@ public:
   }
 
   Iterator
-  find (Map const *const map, int bucketIndex, KeyT key, bool withBucketLock, bool writeLockValue) const
+  find (Map const *const map, int bucketIndex, KeyT key, bool withBucketLock, ValueLockType valueLockType) const
   {
     auto sharedBucketLock = Map::getBucketReadLockFor (&(*bucketMutex));
     std::shared_ptr<std::shared_lock<std::shared_mutex>> noBucketLock;
@@ -185,7 +185,7 @@ public:
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
-	auto result = values[i].getIteratorForKey (map, key, bucketIndex, i, bucketLock, writeLockValue);
+	auto result = values[i].getIteratorForKey (map, key, bucketIndex, i, bucketLock, valueLockType);
 	if (result)
 	  {
 	    return *result;

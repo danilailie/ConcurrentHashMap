@@ -3,6 +3,8 @@
 
 #include <variant>
 
+#include "unordered_map_utils.hpp"
+
 template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 template <class KeyT, class ValueT, class HashFuncT> class bucket;
 template <class KeyT, class ValueT, class HashFuncT> class internal_value;
@@ -14,12 +16,6 @@ public:
   using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
   using WriteLock = std::shared_ptr<std::unique_lock<std::shared_mutex>>;
   using VariandLock = std::variant<SharedLock, WriteLock>;
-
-  enum class ValueLockType
-  {
-    read = 0,
-    write
-  };
 
   Iterator (std::pair<KeyT, ValueT> *aKeyValue, Map const *const aMap, int aBucketIndex, int aValueIndex,
 	    SharedLock aBucketLock, VariandLock aValueLock)

@@ -17,4 +17,10 @@ InvalidKeyValue ()
   return "";
 }
 
+enum class ValueLockType
+{
+  read = 0,
+  write
+};
+
 #endif
