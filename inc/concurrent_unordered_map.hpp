@@ -350,6 +350,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 	  return resultWrite;
 	}
     }
+  return SharedVariantLock ();
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
