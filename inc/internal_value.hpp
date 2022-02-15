@@ -31,7 +31,7 @@ public:
   bool
   compareKey (const KeyT &aKey) const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
     if (!isMarkedForDelete)
       {
 	return keyValue.first == aKey;
@@ -42,7 +42,7 @@ public:
   std::pair<KeyT, ValueT>
   getKeyValuePair () const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
     return keyValue;
   }
 
@@ -56,7 +56,7 @@ public:
   bool
   isAvailable () const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
     return !isMarkedForDelete;
   }
 
@@ -70,7 +70,7 @@ public:
   std::optional<KeyT>
   getKey () const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
     if (!isMarkedForDelete)
       {
 	return keyValue.first;
@@ -85,11 +85,11 @@ public:
     VariandLock valueLock;
     if (isWriteValueLocked)
       {
-	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::write);
+	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::WRITE);
       }
     else
       {
-	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
+	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
       }
 
     auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
@@ -114,7 +114,7 @@ public:
   void
   updateIterator (Iterator &it, int bucketIndex, int valueIndex, SharedLock bucketLock) const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::read);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
 
     it.keyValue = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
     it.key = keyValue.first;

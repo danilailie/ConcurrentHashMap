@@ -19,8 +19,8 @@ InvalidKeyValue ()
 
 enum class ValueLockType
 {
-  read = 0,
-  write
+  READ = 0,
+  WRITE
 };
 
 #endif

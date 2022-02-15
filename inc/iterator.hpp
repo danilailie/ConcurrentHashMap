@@ -28,7 +28,7 @@ public:
     valueIndex = aValueIndex;
     bucketLock = aBucketLock;
     valueLock = aValueLock;
-    valueLockType = isWriteLocked () ? ValueLockType::write : ValueLockType::read;
+    valueLockType = isWriteLocked () ? ValueLockType::WRITE : ValueLockType::READ;
   }
 
   Iterator (const Iterator &other)
