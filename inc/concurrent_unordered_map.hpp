@@ -2,6 +2,7 @@
 #define _CONCURRENT_HASH_MAP_HPP_
 
 #include <atomic>
+#include <cassert>
 #include <chrono>
 #include <functional>
 #include <map>
@@ -27,7 +28,7 @@ public:
   /// <summary>Constructor</summary>
   /// <param name="bucketCount">How many buckets to start with</param>
   /// <returns></returns>
-  concurrent_unordered_map (std::size_t bucketCount = 16000057);
+  concurrent_unordered_map (std::size_t bucketCount = 500009);
 
   /// <summary>Gets the number of elements in the map</summary>
   /// <param></param>
