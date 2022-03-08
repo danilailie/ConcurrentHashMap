@@ -28,31 +28,6 @@ public:
     return currentSize;
   }
 
-  //   KeyT
-  //   getFirstKey (int &position) const
-  //   {
-  //     auto bucketLock = Map::getBucketReadLockFor (&(*bucketMutex));
-  //     for (auto i = 0; i < values.size (); ++i)
-  //       {
-  // 	auto optionalKey = values[i].getKey ();
-  // 	if (optionalKey)
-  // 	  {
-  // 	    position = i;
-  // 	    return *optionalKey;
-  // 	  }
-  //       }
-
-  //     position = int (values.size ());
-  //     return InvalidKeyValue<KeyT> ();
-  //   }
-
-  //   KeyT
-  //   getKeyAt (std::size_t index) const
-  //   {
-  //     auto bucketLock = Map::getBucketReadLockFor (&(*bucketMutex));
-  //     return values[index].getKey ();
-  //   }
-
   std::pair<Iterator, bool>
   insert (Map const *const map, int bucketIndex, const std::pair<KeyT, ValueT> &aKeyValuePair,
 	  bool isWriteLockedValue = false)
@@ -109,20 +84,6 @@ public:
 	  }
       }
     return -1;
-  }
-
-  int
-  getFirstValueIndex () const
-  {
-    auto bucketLock = Map::getBucketReadLockFor (&(*bucketMutex));
-    for (int i = 0; i < int (values.size ()); ++i)
-      {
-	if (values[i].isAvailable ())
-	  {
-	    return i;
-	  }
-      }
-    return int (values.size ());
   }
 
   Iterator
