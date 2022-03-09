@@ -18,7 +18,7 @@ public:
   using VariandLock = std::variant<SharedLock, WriteLock>;
 
   Iterator (std::pair<KeyT, ValueT> *aKeyValue, Map const *const aMap, int aBucketIndex, int aValueIndex,
-	    SharedLock aBucketLock, VariandLock aValueLock)
+	    VariandLock aBucketLock, VariandLock aValueLock)
   {
     key = aKeyValue->first;
     map = aMap;
@@ -94,7 +94,21 @@ public:
   Iterator &
   operator++ ()
   {
-    if (!bucketLock)
+    bool hasBucketLock = false;
+    if (std::holds_alternative<SharedLock> (bucketLock))
+      {
+	auto lockPtr = std::get<SharedLock> (bucketLock);
+	if (lockPtr)
+	  hasBucketLock = true;
+      }
+    else
+      {
+	auto lockPtr = std::get<WriteLock> (bucketLock);
+	if (lockPtr)
+	  hasBucketLock = true;
+      }
+
+    if (!hasBucketLock)
       {
 	bucketLock = map->aquireBucketLock (bucketIndex);
       }
@@ -136,7 +150,7 @@ private:
 
   int bucketIndex;
   int valueIndex;
-  SharedLock bucketLock;
+  VariandLock bucketLock;
   VariandLock valueLock;
   ValueLockType valueLockType;
 

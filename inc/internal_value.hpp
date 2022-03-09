@@ -112,7 +112,7 @@ public:
   }
 
   void
-  updateIterator (Iterator &it, int bucketIndex, int valueIndex, SharedLock bucketLock) const
+  updateIterator (Iterator &it, int bucketIndex, int valueIndex, VariandLock bucketLock) const
   {
     auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
 
