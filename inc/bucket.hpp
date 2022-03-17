@@ -107,6 +107,7 @@ public:
   bool
   advanceIterator (Iterator &it, int currentBucketIndex) const
   {
+    auto bucketReadLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
     int itBucketIndex = it.bucketIndex;
 
     if (itBucketIndex == currentBucketIndex) // get next valid iterator in current bucket (if exists)
@@ -115,7 +116,7 @@ public:
 
 	if (nextValueIndex != -1)
 	  {
-	    values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex, it.bucketLock);
+	    values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex /*, it.bucketLock*/);
 	    return true;
 	  }
 	else // need to go to next bucket
@@ -125,9 +126,9 @@ public:
       }
     else // need to return the first valid element in this bucket
       {
-	using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
-	auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
-	auto bucketLock = std::get<SharedReadLock> (variantBucketLock);
+	// using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
+	// auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
+	// auto bucketLock = std::get<SharedReadLock> (variantBucketLock);
 	int nextValueIndex = getNextValueIndex (-1);
 
 	if (nextValueIndex == -1)
@@ -135,7 +136,7 @@ public:
 	    return false;
 	  }
 
-	values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex, bucketLock);
+	values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex /*, bucketLock*/);
 	return true;
       }
     return false;
