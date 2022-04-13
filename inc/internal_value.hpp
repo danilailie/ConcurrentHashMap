@@ -93,7 +93,7 @@ public:
       }
 
     auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
-    return Iterator (keyValueP, aMap, bucketIndex, valueIndex, /*bucketLock,*/ valueLock);
+    return Iterator (keyValueP, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
   }
 
   std::optional<Iterator>
@@ -105,14 +105,14 @@ public:
     if (!isMarkedForDelete && keyValue.first == key)
       {
 	auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
-	return Iterator (keyValueP, aMap, bucketIndex, valueIndex, /*bucketLock, */ valueLock);
+	return Iterator (keyValueP, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
       }
 
     return {};
   }
 
   void
-  updateIterator (Iterator &it, int bucketIndex, int valueIndex /*, VariandLock bucketLock*/) const
+  updateIterator (Iterator &it, int bucketIndex, int valueIndex, VariandLock bucketLock) const
   {
     auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
 
@@ -121,7 +121,7 @@ public:
     it.bucketIndex = bucketIndex;
     it.valueIndex = valueIndex;
     it.valueLock = valueLock;
-    //     it.bucketLock = bucketLock;
+    it.bucketLock = bucketLock;
   }
 
   void

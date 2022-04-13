@@ -18,7 +18,7 @@ public:
   using VariandLock = std::variant<SharedLock, WriteLock>;
 
   Iterator (std::pair<KeyT, ValueT> *aKeyValue, Map const *const aMap, int aBucketIndex, int aValueIndex,
-	    VariandLock aValueLock)
+	    VariandLock aBucketLock, VariandLock aValueLock)
   {
     key = aKeyValue->first;
     map = aMap;
@@ -26,6 +26,7 @@ public:
 
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
+    bucketLock = aBucketLock;
     valueLock = aValueLock;
     valueLockType = isWriteLocked () ? ValueLockType::WRITE : ValueLockType::READ;
   }
@@ -38,6 +39,7 @@ public:
 
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
+    bucketLock = other.bucketLock;
     valueLock = other.valueLock;
     valueLockType = other.valueLockType;
   }
@@ -66,13 +68,13 @@ public:
   }
 
   std::pair<KeyT, ValueT> &
-  operator* ()
+  operator* () const
   {
     return *keyValue;
   }
 
   std::pair<KeyT, ValueT> *
-  operator-> ()
+  operator-> () const
   {
     return keyValue;
   }
@@ -92,24 +94,28 @@ public:
   Iterator &
   operator++ ()
   {
-    //     bool hasBucketLock = false;
-    //     if (std::holds_alternative<SharedLock> (bucketLock))
-    //       {
-    // 	auto lockPtr = std::get<SharedLock> (bucketLock);
-    // 	if (lockPtr)
-    // 	  hasBucketLock = true;
-    //       }
-    //     else
-    //       {
-    // 	auto lockPtr = std::get<WriteLock> (bucketLock);
-    // 	if (lockPtr)
-    // 	  hasBucketLock = true;
-    //       }
+    bool hasBucketLock = false;
+    if (std::holds_alternative<SharedLock> (bucketLock))
+      {
+	auto lockPtr = std::get<SharedLock> (bucketLock);
+	if (lockPtr)
+	  {
+	    hasBucketLock = true;
+	  }
+      }
+    else
+      {
+	auto lockPtr = std::get<WriteLock> (bucketLock);
+	if (lockPtr)
+	  {
+	    hasBucketLock = true;
+	  }
+      }
 
-    //     if (!hasBucketLock)
-    //       {
-    // 	bucketLock = map->aquireBucketLock (bucketIndex);
-    //       }
+    if (!hasBucketLock)
+      {
+	bucketLock = map->aquireBucketLock (bucketIndex);
+      }
     map->advanceIterator (*this);
     return *this;
   }
@@ -148,6 +154,7 @@ private:
 
   int bucketIndex;
   int valueIndex;
+  VariandLock bucketLock;
   VariandLock valueLock;
   ValueLockType valueLockType;
 
