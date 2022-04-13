@@ -189,6 +189,14 @@ private:
   std::size_t
   eraseUnavailableValues ()
   {
+    {
+      auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
+      if (double (currentSize) > double (values.size ()) * 0.7)
+	{
+	  return currentSize;
+	}
+    }
+
     auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::WRITE);
     std::vector<InternalValue> newValues;
     std::size_t count = 0;
@@ -202,6 +210,7 @@ private:
 	  }
       }
     values = std::move (newValues);
+    currentSize = count;
     return count;
   }
 
