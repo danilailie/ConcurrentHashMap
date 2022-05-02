@@ -253,9 +253,8 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
   if (position != -1)
     {
       erasedCount++;
+      buckets[bucketIndex].eraseUnavailableValues ();
     }
-
-  eraseUnavailableValues ();
 
   if (position != -1)
     {
