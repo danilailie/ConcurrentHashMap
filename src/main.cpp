@@ -188,6 +188,7 @@ timeEraseOperation (MapT &map, const std::string &mapType, bool lock)
 	    << std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime).count ()
 	    << " milliseconds\n";
   workers.clear ();
+  assert (map.size () == 0);
 }
 int
 main ()

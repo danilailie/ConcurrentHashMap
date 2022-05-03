@@ -116,11 +116,6 @@ private:
 
   void unlockResource (std::size_t &bucketIndex, int &valueIndex) const;
 
-  /// <summary>Physically delete the previously removed(erased) elements.</summary>
-  /// <param></param>
-  /// <returns></returns>
-  void eraseUnavailableValues ();
-
   std::size_t
   getNextPrimeNumber (const std::size_t &aValue)
   {
@@ -139,8 +134,8 @@ private:
   HashFuncT hashFunc;
   std::vector<Bucket> buckets;
   std::size_t currentBucketCount;
-  std::atomic<std::size_t> valueCount;
-  std::atomic<std::size_t> erasedCount;
+  std::atomic<uint64_t> valueCount;
+  std::atomic<uint64_t> erasedCount;
 
   friend iterator;
   friend InternalValue;
@@ -152,6 +147,8 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::concurrent_unordered_map (std
 {
   buckets.resize (bucketCount);
   currentBucketCount = bucketCount;
+  valueCount = 0;
+  erasedCount = 0;
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -192,7 +189,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const std::pair<KeyT,
   auto result = buckets[bucketIndex].insert (this, bucketIndex, aKeyValuePair, true);
   if (result.second)
     {
-      valueCount++;
+      ++valueCount;
     }
 
   return result;
@@ -208,7 +205,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const KeyT &aKey, con
   auto result = buckets[bucketIndex].insert (this, bucketIndex, std::make_pair (aKey, aValue));
   if (result.second)
     {
-      valueCount++;
+      ++valueCount;
     }
 
   return result;
@@ -252,7 +249,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
 
   if (position != -1)
     {
-      erasedCount++;
+      ++erasedCount;
       buckets[bucketIndex].eraseUnavailableValues ();
     }
 
@@ -489,43 +486,30 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::unlockResource (std::size_t &
 
 template <class KeyT, class ValueT, class HashFuncT>
 void
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::eraseUnavailableValues ()
-{
-  std::size_t validValueCount = 0;
-  for (std::size_t i = 0; i < buckets.size (); ++i)
-    {
-      validValueCount += buckets[i].eraseUnavailableValues ();
-    }
-  valueCount = validValueCount;
-  erasedCount = 0;
-}
-
-template <class KeyT, class ValueT, class HashFuncT>
-void
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::rehash ()
 {
-  std::unique_lock<std::shared_mutex> lock (rehashMutex);
+  //   std::unique_lock<std::shared_mutex> lock (rehashMutex);
 
-  currentBucketCount = getNextPrimeNumber (currentBucketCount * 2);
-  std::vector<Bucket> newBuckets;
-  newBuckets.resize (currentBucketCount);
+  //   currentBucketCount = getNextPrimeNumber (currentBucketCount * 2);
+  //   std::vector<Bucket> newBuckets;
+  //   newBuckets.resize (currentBucketCount);
 
-  for (auto i = 0; i < buckets.size (); ++i)
-    {
-      std::unique_lock<std::shared_mutex> bucketLock (*(buckets[i].bucketMutex));
-      for (auto j = 0; j < buckets[i].values.size (); ++j)
-	{
-	  if (buckets[i].values[j].isAvailable ())
-	    {
-	      auto hashResult = hashFunc (buckets[i].values[j].keyValue.first);
-	      int bucketIndex = int (hashResult) % currentBucketCount;
-	      auto keyValue = buckets[i].values[j].getKeyValuePair ();
-	      newBuckets[bucketIndex].add (keyValue);
-	    }
-	}
-    }
+  //   for (auto i = 0; i < buckets.size (); ++i)
+  //     {
+  //       std::unique_lock<std::shared_mutex> bucketLock (*(buckets[i].bucketMutex));
+  //       for (auto j = 0; j < buckets[i].values.size (); ++j)
+  // 	{
+  // 	  if (buckets[i].values[j].isAvailable ())
+  // 	    {
+  // 	      auto hashResult = hashFunc (buckets[i].values[j].keyValue.first);
+  // 	      int bucketIndex = int (hashResult) % currentBucketCount;
+  // 	      auto keyValue = buckets[i].values[j].getKeyValuePair ();
+  // 	      newBuckets[bucketIndex].add (keyValue);
+  // 	    }
+  // 	}
+  //     }
 
-  buckets = std::move (newBuckets);
+  //   buckets = std::move (newBuckets);
 }
 
 #endif
