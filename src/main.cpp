@@ -193,22 +193,36 @@ timeEraseOperation (MapT &map, const std::string &mapType, bool lock)
 int
 main ()
 {
+  using namespace std::chrono_literals;
   std::cout << "Using " << std::thread::hardware_concurrency () << " threads...\n";
-  concurrent_unordered_map<int, std::shared_ptr<int>> myMap (100003);
-  std::unordered_map<int, std::shared_ptr<int>> standardMap;
+  concurrent_unordered_map<int, std::shared_ptr<int>> myMap (0.7, 100003);
+  //   std::unordered_map<int, std::shared_ptr<int>> standardMap;
 
-  timeInsertOperation (myMap, "Concurrent Map", false);
-  timeInsertOperation (standardMap, "Standard Map", true);
+  //   timeInsertOperation (myMap, "Concurrent Map", false);
+  //   timeInsertOperation (standardMap, "Standard Map", true);
 
-  timeFindOperation (myMap, "Concurrent Map", false);
-  timeFindOperation (standardMap, "Standard Map", true);
-  timeFindLockOperation (myMap);
+  //   timeFindOperation (myMap, "Concurrent Map", false);
+  //   timeFindOperation (standardMap, "Standard Map", true);
+  //   timeFindLockOperation (myMap);
 
-  timeTraverseOperation (myMap, "Concurrent Map", false);
-  timeTraverseOperation (standardMap, "Standard Map", true);
+  //   timeTraverseOperation (myMap, "Concurrent Map", false);
+  //   timeTraverseOperation (standardMap, "Standard Map", true);
 
-  timeEraseOperation (myMap, "Concurrent Map", false);
-  timeEraseOperation (standardMap, "Standard Map", true);
+  //   timeEraseOperation (myMap, "Concurrent Map", false);
+  //   timeEraseOperation (standardMap, "Standard Map", true);
+
+  myMap.insert (std::make_pair (7, std::make_shared<int> (7)));
+
+  std::thread t ([&myMap] () {
+    auto it = myMap.find (7);
+    std::this_thread::sleep_for (4s);
+    std::cout << "value: " << (*(it->second));
+  });
+
+  std::this_thread::sleep_for (1s);
+  myMap.erase (7);
+
+  t.join ();
 
   return 0;
 }

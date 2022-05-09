@@ -28,7 +28,7 @@ public:
   /// <summary>Constructor</summary>
   /// <param name="bucketCount">How many buckets to start with</param>
   /// <returns></returns>
-  concurrent_unordered_map (std::size_t bucketCount = 500009);
+  concurrent_unordered_map (float erase_threshold_value = 0.7, std::size_t bucketCount = 500009);
 
   /// <summary>Gets the number of elements in the map</summary>
   /// <param></param>
@@ -136,6 +136,7 @@ private:
   std::size_t currentBucketCount;
   std::atomic<uint64_t> valueCount;
   std::atomic<uint64_t> erasedCount;
+  float erase_threshold;
 
   friend iterator;
   friend InternalValue;
@@ -143,12 +144,14 @@ private:
 };
 
 template <class KeyT, class ValueT, class HashFuncT>
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::concurrent_unordered_map (std::size_t bucketCount)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::concurrent_unordered_map (float erase_threshold_value,
+									     std::size_t bucketCount)
 {
   buckets.resize (bucketCount);
   currentBucketCount = bucketCount;
   valueCount = 0;
   erasedCount = 0;
+  erase_threshold = erase_threshold_value;
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -250,7 +253,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const KeyT &aKey)
   if (position != -1)
     {
       ++erasedCount;
-      buckets[bucketIndex].eraseUnavailableValues ();
+      buckets[bucketIndex].eraseUnavailableValues (this, bucketIndex, erase_threshold);
     }
 
   if (position != -1)
@@ -488,28 +491,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 void
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::rehash ()
 {
-  //   std::unique_lock<std::shared_mutex> lock (rehashMutex);
-
-  //   currentBucketCount = getNextPrimeNumber (currentBucketCount * 2);
-  //   std::vector<Bucket> newBuckets;
-  //   newBuckets.resize (currentBucketCount);
-
-  //   for (auto i = 0; i < buckets.size (); ++i)
-  //     {
-  //       std::unique_lock<std::shared_mutex> bucketLock (*(buckets[i].bucketMutex));
-  //       for (auto j = 0; j < buckets[i].values.size (); ++j)
-  // 	{
-  // 	  if (buckets[i].values[j].isAvailable ())
-  // 	    {
-  // 	      auto hashResult = hashFunc (buckets[i].values[j].keyValue.first);
-  // 	      int bucketIndex = int (hashResult) % currentBucketCount;
-  // 	      auto keyValue = buckets[i].values[j].getKeyValuePair ();
-  // 	      newBuckets[bucketIndex].add (keyValue);
-  // 	    }
-  // 	}
-  //     }
-
-  //   buckets = std::move (newBuckets);
+  // TODO: Implement
 }
 
 #endif

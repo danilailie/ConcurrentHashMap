@@ -19,6 +19,7 @@ public:
   bucket ()
   {
     bucketMutex = std::make_unique<std::shared_mutex> ();
+    currentSize = 0;
   }
 
   std::size_t
@@ -187,16 +188,17 @@ private:
   }
 
   std::size_t
-  eraseUnavailableValues ()
+  eraseUnavailableValues (Map const *const aMap, const int bucketIndex, const double threshold)
   {
     {
       auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
-      if (double (currentSize) > double (values.size ()) * 0.7)
+      if (double (currentSize) > double (values.size ()) * threshold)
 	{
 	  return currentSize;
 	}
     }
 
+    using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
     auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::WRITE);
     std::vector<InternalValue> newValues;
     std::size_t count = 0;
@@ -205,7 +207,9 @@ private:
       {
 	if (values[i].isAvailable ())
 	  {
-	    newValues.push_back (InternalValue (values[i].getKeyValuePair ()));
+	    auto emptyBucketLock = SharedLock ();
+	    auto valueIt = values[i].getIterator (aMap, bucketIndex, i, emptyBucketLock, true);
+	    newValues.push_back (InternalValue (std::make_pair (valueIt->first, valueIt->second)));
 	    count++;
 	  }
       }
@@ -217,7 +221,7 @@ private:
 private:
   std::unique_ptr<std::shared_mutex> bucketMutex;
   std::vector<InternalValue> values;
-  std::size_t currentSize = 0;
+  std::uint32_t currentSize;
 
   friend Map;
 };
