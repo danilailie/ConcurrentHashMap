@@ -28,7 +28,7 @@ public:
   /// <summary>Constructor</summary>
   /// <param name="bucketCount">How many buckets to start with</param>
   /// <returns></returns>
-  concurrent_unordered_map (float erase_threshold_value = 0.7, std::size_t bucketCount = 500009);
+  concurrent_unordered_map (std::size_t bucketCount = 500009, float erase_threshold_value = 0.7);
 
   /// <summary>Gets the number of elements in the map</summary>
   /// <param></param>
@@ -144,8 +144,8 @@ private:
 };
 
 template <class KeyT, class ValueT, class HashFuncT>
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::concurrent_unordered_map (float erase_threshold_value,
-									     std::size_t bucketCount)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::concurrent_unordered_map (std::size_t bucketCount,
+									     float erase_threshold_value)
 {
   buckets.resize (bucketCount);
   currentBucketCount = bucketCount;

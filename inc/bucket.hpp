@@ -19,7 +19,6 @@ public:
   bucket ()
   {
     bucketMutex = std::make_unique<std::shared_mutex> ();
-    currentSize = 0;
   }
 
   std::size_t
@@ -221,7 +220,7 @@ private:
 private:
   std::unique_ptr<std::shared_mutex> bucketMutex;
   std::vector<InternalValue> values;
-  std::uint32_t currentSize;
+  std::size_t currentSize = 0;
 
   friend Map;
 };
