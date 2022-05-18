@@ -1,6 +1,7 @@
 #ifndef _BUCKET_HPP_
 #define _BUCKET_HPP_
 
+#include <memory>
 #include <shared_mutex>
 #include <vector>
 
@@ -40,33 +41,34 @@ public:
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
-	if (values[i].getKey () == aKeyValuePair.first)
+	if (values[i]->getKey () == aKeyValuePair.first)
 	  {
 	    foundPosition = i;
 	  }
       }
 
-    if (foundPosition != -1 && values[foundPosition].isAvailable ()) // there is a value with this key available
+    if (foundPosition != -1 && values[foundPosition]->isAvailable ()) // there is a value with this key available
       {
-	auto it = values[foundPosition].getIterator (map, bucketIndex, foundPosition, emptyBucketMutex, true);
+	auto it = values[foundPosition]->getIterator (map, bucketIndex, foundPosition, emptyBucketMutex, true);
 	return std::make_pair (it, false);
       }
 
     if (foundPosition == -1) // key was not found
       {
-	values.push_back (InternalValue (aKeyValuePair));
+	values.push_back (std::make_shared<InternalValue> (aKeyValuePair));
 	++currentSize;
 	insertPosition = int (values.size ()) - 1;
       }
 
-    if (foundPosition != -1 && !values[foundPosition].isAvailable ()) // key was found, but previously erased.
+    if (foundPosition != -1 && !values[foundPosition]->isAvailable ()) // key was found, but previously erased.
       {
-	values[foundPosition].setAvailable ();
-	values[foundPosition].updateValue (aKeyValuePair.second);
+	values[foundPosition]->setAvailable ();
+	values[foundPosition]->updateValue (aKeyValuePair.second);
 	insertPosition = foundPosition;
       }
 
-    auto it = values[insertPosition].getIterator (map, bucketIndex, insertPosition, emptyBucketMutex, true);
+    auto it =
+      values[insertPosition]->getIterator (map, bucketIndex, insertPosition, emptyBucketMutex, isWriteLockedValue);
     return std::make_pair (it, true);
   }
 
@@ -154,7 +156,7 @@ public:
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
-	auto result = values[i].getIteratorForKey (map, key, bucketIndex, i, bucketLock, valueLockType);
+	auto result = values[i]->getIteratorForKey (map, key, bucketIndex, i, bucketLock, valueLockType);
 	if (result)
 	  {
 	    return *result;
@@ -219,7 +221,7 @@ private:
 
 private:
   std::unique_ptr<std::shared_mutex> bucketMutex;
-  std::vector<InternalValue> values;
+  std::vector<std::shared_ptr<InternalValue>> values;
   std::size_t currentSize = 0;
 
   friend Map;

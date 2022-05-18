@@ -189,7 +189,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const std::pair<KeyT,
   auto hashResult = hashFunc (aKeyValuePair.first);
   int bucketIndex = int (hashResult) % currentBucketCount;
 
-  auto result = buckets[bucketIndex].insert (this, bucketIndex, aKeyValuePair, true);
+  auto result = buckets[bucketIndex].insert (this, bucketIndex, aKeyValuePair);
   if (result.second)
     {
       ++valueCount;
