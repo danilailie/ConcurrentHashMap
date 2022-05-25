@@ -14,7 +14,7 @@ template <typename KeyT, std::enable_if_t<!std::is_integral<KeyT>::value, bool> 
 KeyT
 InvalidKeyValue ()
 {
-  return "";
+  return KeyT ();
 }
 
 enum class ValueLockType
@@ -30,6 +30,7 @@ getNextPrimeNumber (const uint64_t &currentNumber)
 					      5471,	10949,	   21911,     43853,	 87719,	    175447,   350899,
 					      701819,	1403641,   2807303,   5614657,	 11229331,  22458671, 44917381,
 					      89834777, 179669557, 359339171, 718678369, 1437356741 };
+  return 0;
 }
 
 #endif

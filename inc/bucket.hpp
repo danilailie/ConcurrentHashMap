@@ -98,9 +98,9 @@ public:
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
-	if (values[i].isAvailable ())
+	if (values[i]->isAvailable ())
 	  {
-	    return values[i].getIterator (aMap, bucketIndex, i, bucketLock);
+	    return values[i]->getIterator (aMap, bucketIndex, i, bucketLock);
 	  }
       }
 
@@ -118,7 +118,7 @@ public:
 
 	if (nextValueIndex != -1)
 	  {
-	    values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex, it.bucketLock);
+	    values[nextValueIndex]->updateIterator (it, currentBucketIndex, nextValueIndex, it.bucketLock);
 	    return true;
 	  }
 	else // need to go to next bucket
@@ -138,7 +138,7 @@ public:
 	    return false;
 	  }
 
-	values[nextValueIndex].updateIterator (it, currentBucketIndex, nextValueIndex, bucketLock);
+	values[nextValueIndex]->updateIterator (it, currentBucketIndex, nextValueIndex, bucketLock);
 	return true;
       }
     return false;
@@ -173,7 +173,7 @@ public:
     auto valueLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
     for (int i = index + 1; i < int (values.size ()); ++i)
       {
-	if (values[i].isAvailable ())
+	if (values[i]->isAvailable ())
 	  {
 	    return i;
 	  }
