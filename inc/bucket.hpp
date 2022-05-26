@@ -37,7 +37,7 @@ public:
 
     int foundPosition = -1;
     int insertPosition = -1;
-    std::shared_ptr<std::shared_lock<std::shared_mutex>> emptyBucketMutex;
+    SharedVariantLock emptyBucketMutex;
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
@@ -149,10 +149,9 @@ public:
   {
     using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
 
-    auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
-    auto readBucketLock = std::get<SharedReadLock> (variantBucketLock);
+    auto readBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
 
-    std::shared_ptr<std::shared_lock<std::shared_mutex>> noBucketLock;
+    SharedVariantLock noBucketLock;
     auto bucketLock = withBucketLock ? readBucketLock : noBucketLock;
 
     for (int i = 0; i < int (values.size ()); ++i)
@@ -209,7 +208,7 @@ private:
       {
 	if (values[i]->isAvailable ())
 	  {
-	    auto emptyBucketLock = SharedLock ();
+	    auto emptyBucketLock = SharedVariantLock ();
 	    auto valueIt = values[i]->getIterator (aMap, bucketIndex, i, emptyBucketLock, true);
 	    newValues.push_back (std::make_shared<InternalValue> (std::make_pair (valueIt->first, valueIt->second)));
 	    count++;

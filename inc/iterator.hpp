@@ -13,12 +13,9 @@ template <class KeyT, class ValueT, class HashFuncT> class Iterator
 {
 public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
-  using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
-  using WriteLock = std::shared_ptr<std::unique_lock<std::shared_mutex>>;
-  using VariandLock = std::variant<SharedLock, WriteLock>;
 
   Iterator (std::pair<KeyT, ValueT> *aKeyValue, Map const *const aMap, int aBucketIndex, int aValueIndex,
-	    VariandLock aBucketLock, VariandLock aValueLock)
+	    SharedVariantLock aBucketLock, SharedVariantLock aValueLock)
   {
     key = aKeyValue->first;
     map = aMap;
@@ -74,7 +71,7 @@ public:
   }
 
   std::pair<KeyT, ValueT> *
-  operator-> () const
+  operator->() const
   {
     return keyValue;
   }
@@ -94,23 +91,7 @@ public:
   Iterator &
   operator++ ()
   {
-    bool hasBucketLock = false;
-    if (std::holds_alternative<SharedLock> (bucketLock))
-      {
-	auto lockPtr = std::get<SharedLock> (bucketLock);
-	if (lockPtr)
-	  {
-	    hasBucketLock = true;
-	  }
-      }
-    else
-      {
-	auto lockPtr = std::get<WriteLock> (bucketLock);
-	if (lockPtr)
-	  {
-	    hasBucketLock = true;
-	  }
-      }
+    bool hasBucketLock = bucketLock != nullptr;
 
     if (!hasBucketLock)
       {
@@ -140,7 +121,7 @@ private:
   bool
   isWriteLocked () const
   {
-    return std::get_if<WriteLock> (&valueLock);
+    return std::get_if<WriteLock> (&(*valueLock));
   }
 
 private:
@@ -154,8 +135,8 @@ private:
 
   int bucketIndex;
   int valueIndex;
-  VariandLock bucketLock;
-  VariandLock valueLock;
+  SharedVariantLock bucketLock;
+  SharedVariantLock valueLock;
   ValueLockType valueLockType;
 
   friend Map;

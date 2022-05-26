@@ -3,6 +3,12 @@
 
 #include <type_traits>
 
+using ReadLock = std::shared_lock<std::shared_mutex>;
+using WriteLock = std::unique_lock<std::shared_mutex>;
+using VariantLock = std::variant<ReadLock, WriteLock>;
+using SharedVariantLock = std::shared_ptr<VariantLock>;
+using WeakVariantLock = std::weak_ptr<VariantLock>;
+
 template <typename KeyT, std::enable_if_t<std::is_integral<KeyT>::value, bool> = true>
 KeyT
 InvalidKeyValue ()

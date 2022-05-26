@@ -195,7 +195,7 @@ main ()
 {
   using namespace std::chrono_literals;
   std::cout << "Using " << std::thread::hardware_concurrency () << " threads...\n";
-  concurrent_unordered_map<int, std::shared_ptr<int>> myMap;
+  concurrent_unordered_map<int, int> myMap;
   //   std::unordered_map<int, std::shared_ptr<int>> standardMap;
 
   //   timeInsertOperation (myMap, "Concurrent Map", false);
@@ -211,18 +211,10 @@ main ()
   //   timeEraseOperation (myMap, "Concurrent Map", false);
   //   timeEraseOperation (standardMap, "Standard Map", true);
 
-  myMap.insert (std::make_pair (7, std::make_shared<int> (7)));
+  myMap.insert (std::make_pair (7, 7));
+  auto findIt = std::as_const (myMap).find (7); // read
 
-  std::thread t ([&myMap] () {
-    auto it = myMap.find (7);
-    std::this_thread::sleep_for (4s);
-    std::cout << "value: " << (*(it->second)) << '\n';
-  });
-
-  std::this_thread::sleep_for (1s);
   myMap.erase (7);
-
-  t.join ();
 
   return 0;
 }
