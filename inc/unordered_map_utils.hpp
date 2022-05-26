@@ -1,11 +1,14 @@
 #ifndef _HASH_MAP_UTILS_HPP_
 #define _HASH_MAP_UTILS_HPP_
 
+#include <memory>
 #include <type_traits>
 
 using ReadLock = std::shared_lock<std::shared_mutex>;
+using SharedReadLock = std::shared_ptr<ReadLock>;
 using WriteLock = std::unique_lock<std::shared_mutex>;
-using VariantLock = std::variant<ReadLock, WriteLock>;
+using SharedWriteLock = std::shared_ptr<WriteLock>;
+using VariantLock = std::variant<SharedReadLock, SharedWriteLock>;
 using SharedVariantLock = std::shared_ptr<VariantLock>;
 using WeakVariantLock = std::weak_ptr<VariantLock>;
 

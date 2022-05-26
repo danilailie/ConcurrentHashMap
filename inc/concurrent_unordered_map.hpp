@@ -307,8 +307,8 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 
   if (lockType == ValueLockType::READ)
     {
-      VariantLock *variantLock = new VariantLock (ReadLock (*mutexAddress));
-      auto lock = SharedVariantLock (new VariantLock (ReadLock (*mutexAddress)), [mutexAddress] (auto *p) {
+      auto sharedReadLock = std::make_shared<ReadLock> (*mutexAddress);
+      auto lock = SharedVariantLock (new VariantLock (sharedReadLock), [mutexAddress] (auto *p) {
 	value_mutex_to_lock.erase (mutexAddress);
 	delete p;
       });
@@ -318,7 +318,8 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
     }
 
   // this is the write case.
-  auto lock = SharedVariantLock (new VariantLock (WriteLock (*mutexAddress)), [mutexAddress] (auto *p) {
+  auto sharedWriteLock = std::make_shared<WriteLock> (*mutexAddress);
+  auto lock = SharedVariantLock (new VariantLock (sharedWriteLock), [mutexAddress] (auto *p) {
     value_mutex_to_lock.erase (mutexAddress);
     delete p;
   });
@@ -345,8 +346,8 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
 
   if (lockType == ValueLockType::READ)
     {
-      VariantLock *variantLock = new VariantLock (ReadLock (*mutexAddress));
-      auto lock = SharedVariantLock (new VariantLock (ReadLock (*mutexAddress)), [mutexAddress] (auto *p) {
+      auto sharedReadLock = std::make_shared<ReadLock> (*mutexAddress);
+      auto lock = SharedVariantLock (new VariantLock (sharedReadLock), [mutexAddress] (auto *p) {
 	bucket_mutex_to_lock.erase (mutexAddress);
 	delete p;
       });
@@ -356,7 +357,8 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
     }
 
   // this is the write case.
-  auto lock = SharedVariantLock (new VariantLock (WriteLock (*mutexAddress)), [mutexAddress] (auto *p) {
+  auto sharedWriteLock = std::make_shared<WriteLock> (*mutexAddress);
+  auto lock = SharedVariantLock (new VariantLock (sharedWriteLock), [mutexAddress] (auto *p) {
     bucket_mutex_to_lock.erase (mutexAddress);
     delete p;
   });

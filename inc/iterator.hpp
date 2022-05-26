@@ -71,7 +71,7 @@ public:
   }
 
   std::pair<KeyT, ValueT> *
-  operator->() const
+  operator-> () const
   {
     return keyValue;
   }
@@ -121,7 +121,7 @@ private:
   bool
   isWriteLocked () const
   {
-    return std::get_if<WriteLock> (&(*valueLock));
+    return std::get_if<SharedWriteLock> (&(*valueLock));
   }
 
 private:
