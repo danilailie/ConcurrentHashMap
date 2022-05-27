@@ -94,13 +94,12 @@ public:
   {
     using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
     auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
-    auto bucketLock = std::get<SharedReadLock> (variantBucketLock);
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i]->isAvailable ())
 	  {
-	    return values[i]->getIterator (aMap, bucketIndex, i, bucketLock);
+	    return values[i]->getIterator (aMap, bucketIndex, i, variantBucketLock);
 	  }
       }
 
@@ -130,7 +129,6 @@ public:
       {
 	using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
 	auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
-	auto bucketLock = std::get<SharedReadLock> (variantBucketLock);
 	int nextValueIndex = getNextValueIndex (-1);
 
 	if (nextValueIndex == -1)
@@ -138,7 +136,7 @@ public:
 	    return false;
 	  }
 
-	values[nextValueIndex]->updateIterator (it, currentBucketIndex, nextValueIndex, bucketLock);
+	values[nextValueIndex]->updateIterator (it, currentBucketIndex, nextValueIndex, variantBucketLock);
 	return true;
       }
     return false;

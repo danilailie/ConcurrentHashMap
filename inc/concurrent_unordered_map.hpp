@@ -277,7 +277,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 SharedVariantLock
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::aquireBucketLock (int bucketIndex) const
 {
-  return std::make_shared<std::shared_lock<std::shared_mutex>> (*(buckets[bucketIndex].bucketMutex));
+  return getBucketLockFor (&(*buckets[bucketIndex].bucketMutex), ValueLockType::READ);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
