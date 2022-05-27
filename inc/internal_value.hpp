@@ -14,9 +14,6 @@ template <class KeyT, class ValueT, class HashFuncT> class internal_value
 public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
   using Iterator = typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator;
-  using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
-  using WriteLock = std::shared_ptr<std::unique_lock<std::shared_mutex>>;
-  using VariandLock = std::variant<SharedLock, WriteLock>;
 
   internal_value (const KeyT &aKey, const ValueT &aValue) : isMarkedForDelete (false), keyValue (aKey, aValue)
   {
@@ -49,7 +46,7 @@ public:
   void
   erase ()
   {
-    std::unique_lock<std::shared_mutex> lock (*valueMutex);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::WRITE);
     isMarkedForDelete = true;
   }
 
@@ -79,10 +76,10 @@ public:
   }
 
   Iterator
-  getIterator (Map const *const aMap, int bucketIndex, int valueIndex, SharedLock bucketLock,
+  getIterator (Map const *const aMap, int bucketIndex, int valueIndex, SharedVariantLock bucketLock,
 	       bool isWriteValueLocked = false) const
   {
-    VariandLock valueLock;
+    SharedVariantLock valueLock;
     if (isWriteValueLocked)
       {
 	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::WRITE);
@@ -97,7 +94,7 @@ public:
   }
 
   std::optional<Iterator>
-  getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedLock bucketLock,
+  getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedVariantLock bucketLock,
 		     ValueLockType valueLockType) const
   {
     auto valueLock = Map::getValueLockFor (&(*valueMutex), valueLockType);
@@ -112,7 +109,7 @@ public:
   }
 
   void
-  updateIterator (Iterator &it, int bucketIndex, int valueIndex, VariandLock bucketLock) const
+  updateIterator (Iterator &it, int bucketIndex, int valueIndex, SharedVariantLock bucketLock) const
   {
     auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
 
