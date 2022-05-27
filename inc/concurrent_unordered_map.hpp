@@ -301,28 +301,35 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
   if (it != value_mutex_to_lock.end ())
     {
       auto [weakVariantLock, valueLockType] = it->second;
-      assert (valueLockType == lockType);
-      return weakVariantLock.lock ();
+      auto sharedVariantLock = weakVariantLock.lock ();
+      if (valueLockType == lockType)
+	{
+	  return sharedVariantLock;
+	}
+      else
+	{
+	  *sharedVariantLock = VariantLock (); // that will clear the previous lock.
+	}
     }
 
   if (lockType == ValueLockType::READ)
     {
-      auto sharedReadLock = std::make_shared<ReadLock> (*mutexAddress);
-      auto lock = SharedVariantLock (new VariantLock (sharedReadLock), [mutexAddress] (auto *p) {
+      auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
 	value_mutex_to_lock.erase (mutexAddress);
 	delete p;
       });
+      auto lock = std::make_shared<VariantLock> (sharedReadLock);
       auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
       assert (resultInsert.second);
       return lock;
     }
 
   // this is the write case.
-  auto sharedWriteLock = std::make_shared<WriteLock> (*mutexAddress);
-  auto lock = SharedVariantLock (new VariantLock (sharedWriteLock), [mutexAddress] (auto *p) {
+  auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
     value_mutex_to_lock.erase (mutexAddress);
     delete p;
   });
+  auto lock = std::make_shared<VariantLock> (sharedWriteLock);
   auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
   assert (resultInsert.second);
   return lock;
@@ -340,28 +347,35 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
   if (it != bucket_mutex_to_lock.end ())
     {
       auto [weakVariantLock, valueLockType] = it->second;
-      assert (valueLockType == lockType);
-      return weakVariantLock.lock ();
+      auto sharedVariantLock = weakVariantLock.lock ();
+      if (valueLockType == lockType)
+	{
+	  return sharedVariantLock;
+	}
+      else
+	{
+	  *sharedVariantLock = VariantLock (); // that will clear the previous lock.
+	}
     }
 
   if (lockType == ValueLockType::READ)
     {
-      auto sharedReadLock = std::make_shared<ReadLock> (*mutexAddress);
-      auto lock = SharedVariantLock (new VariantLock (sharedReadLock), [mutexAddress] (auto *p) {
+      auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
 	bucket_mutex_to_lock.erase (mutexAddress);
 	delete p;
       });
+      auto lock = std::make_shared<VariantLock> (sharedReadLock);
       auto resultInsert = bucket_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
       assert (resultInsert.second);
       return lock;
     }
 
   // this is the write case.
-  auto sharedWriteLock = std::make_shared<WriteLock> (*mutexAddress);
-  auto lock = SharedVariantLock (new VariantLock (sharedWriteLock), [mutexAddress] (auto *p) {
+  auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
     bucket_mutex_to_lock.erase (mutexAddress);
     delete p;
   });
+  auto lock = std::make_shared<VariantLock> (sharedWriteLock);
   auto resultInsert = bucket_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
   assert (resultInsert.second);
   return lock;
