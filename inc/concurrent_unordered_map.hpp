@@ -326,6 +326,8 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
       assert (resultInsert.second);
       return lock;
     }
+
+  // this is the write case.
   auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
     value_mutex_to_lock.erase (mutexAddress);
     delete p;
