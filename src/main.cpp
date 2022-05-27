@@ -212,9 +212,14 @@ main ()
   //   timeEraseOperation (standardMap, "Standard Map", true);
 
   myMap.insert (std::make_pair (7, 7));
-  auto findIt = std::as_const (myMap).find (7); // read
+  auto findIt = std::as_const (myMap).find (7); // read lock
 
-  myMap.erase (7);
+  myMap.erase (7); // write lock
+
+  std::this_thread::sleep_for (3s);
+  std::cout << "Sleep done.\n";
+
+  // We should see a write lock dest now.
 
   return 0;
 }

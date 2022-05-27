@@ -305,13 +305,18 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 	}
       else
 	{
+	  // If you have write lock and request read...do not reset.
+	  // Just return the write lock that you have.
 	  *sharedVariantLock = VariantLock (); // that will clear the previous lock.
+	  // Unlock and remove from map.
+	  // This one is also in the iterator.
 	}
     }
 
   if (lockType == ValueLockType::READ)
     {
       auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
+	std::cout << "Destructor value read lock.\n";
 	value_mutex_to_lock.erase (mutexAddress);
 	delete p;
       });
@@ -323,6 +328,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 
   // this is the write case.
   auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
+    std::cout << "Destructor value write lock.\n";
     value_mutex_to_lock.erase (mutexAddress);
     delete p;
   });
@@ -358,6 +364,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
   if (lockType == ValueLockType::READ)
     {
       auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
+	std::cout << "Destructor bucket read lock.\n";
 	bucket_mutex_to_lock.erase (mutexAddress);
 	delete p;
       });
@@ -369,6 +376,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
 
   // this is the write case.
   auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
+    std::cout << "Destructor bucket write lock.\n";
     bucket_mutex_to_lock.erase (mutexAddress);
     delete p;
   });
