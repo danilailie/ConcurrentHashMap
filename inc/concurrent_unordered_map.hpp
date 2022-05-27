@@ -390,9 +390,9 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
     delete p;
   });
   auto lock = std::make_shared<VariantLock> (sharedWriteLock);
-  if (lockType == ValueLockType::READ)
+  if (lock_needs_to_change)
     {
-      return sharedVariantLock;
+      *sharedVariantLock = *lock;
     }
   auto resultInsert = bucket_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
   assert (resultInsert.second);
