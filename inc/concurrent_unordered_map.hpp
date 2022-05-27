@@ -295,9 +295,6 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
   // - it allows for a weak_ptr (we don't need ownership in this map - object would not destroy itself)
   // - adrress multiple entrancies from the same thread (IE: same thread creates it for the same value multiple times)
 
-  //   SharedReadLock resultRead;
-  //   SharedWriteLock resultWrite;
-
   if (it != value_mutex_to_lock.end ())
     {
       auto [weakVariantLock, valueLockType] = it->second;
