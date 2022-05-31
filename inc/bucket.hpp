@@ -92,7 +92,6 @@ public:
   Iterator
   begin (Map const *const aMap, int bucketIndex) const
   {
-    using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
     auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
 
     for (int i = 0; i < int (values.size ()); ++i)

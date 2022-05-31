@@ -294,7 +294,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
   // - it allows for a custom destructor which we need
   // - it allows for a weak_ptr (we don't need ownership in this map - object would not destroy itself)
   // - adrress multiple entrancies from the same thread (IE: same thread creates it for the same value multiple times)
-  std::shared_ptr<VariantLock> sharedVariantLock;
+  SharedVariantLock sharedVariantLock;
   bool lock_needs_to_change = false;
   if (it != value_mutex_to_lock.end ())
     {
@@ -350,7 +350,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
   using LockMap = std::map<std::shared_mutex *, std::tuple<WeakVariantLock, ValueLockType>>;
   static thread_local LockMap bucket_mutex_to_lock;
 
-  std::shared_ptr<VariantLock> sharedVariantLock;
+  SharedVariantLock sharedVariantLock;
   bool lock_needs_to_change = false;
   auto it = bucket_mutex_to_lock.find (mutexAddress);
   if (it != bucket_mutex_to_lock.end ())
