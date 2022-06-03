@@ -213,13 +213,13 @@ main ()
 
   concurrent_unordered_map<int, std::string> myMap;
   myMap.insert (std::make_pair (7, "seven"));
-  auto it = std::as_const (myMap).find (7);
+  auto it = std::as_const (myMap).find (7); // read
   std::thread t ([&] () {
-    auto it_thread = std::as_const (myMap).find (7);
-    assert (it_thread != myMap.end ());
+    //     auto it_thread = std::as_const (myMap).find (7); // read
+    //     assert (it_thread != myMap.end ());
     std::this_thread::sleep_for (1s);
-    std::cout << (*it_thread).second << "\n";
-    myMap.erase (it_thread);
+    //     std::cout << (*it_thread).second << "\n";
+    myMap.erase (7);
   });
   std::this_thread::sleep_for (100ms);
   myMap.erase (it);

@@ -44,9 +44,9 @@ public:
   }
 
   void
-  erase ()
+  erase (std::shared_mutex *bucketMutexAddress)
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::WRITE);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::WRITE, bucketMutexAddress);
     isMarkedForDelete = true;
   }
 
@@ -82,7 +82,8 @@ public:
     SharedVariantLock valueLock;
     if (isWriteValueLocked)
       {
-	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::WRITE);
+	auto bucketMutexAddress = &(*(aMap->buckets[bucketIndex].bucketMutex));
+	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::WRITE, bucketMutexAddress);
       }
     else
       {

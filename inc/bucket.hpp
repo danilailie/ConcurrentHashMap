@@ -81,7 +81,7 @@ public:
       {
 	if (values[i]->compareKey (aKey))
 	  {
-	    values[i]->erase ();
+	    values[i]->erase (&*bucketMutex);
 	    --currentSize;
 	    return i;
 	  }
@@ -222,6 +222,7 @@ private:
   std::size_t currentSize = 0;
 
   friend Map;
+  friend InternalValue;
 };
 
 #endif

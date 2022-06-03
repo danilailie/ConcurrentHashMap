@@ -102,7 +102,8 @@ private:
 private:
   std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
   SharedVariantLock aquireBucketLock (int bucketIndex) const;
-  static SharedVariantLock getValueLockFor (std::shared_mutex *mutexAddress, ValueLockType lockType);
+  static SharedVariantLock getValueLockFor (std::shared_mutex *valueMutexAddress, ValueLockType lockType,
+					    std::shared_mutex *bucketMutexAddress = nullptr);
   static SharedVariantLock getBucketLockFor (std::shared_mutex *mutexAddress, ValueLockType lockType);
 
   /// <summary>Gets the key of the first element - equivalent to begin()</summary>
@@ -290,12 +291,17 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::aquireBucketLock (int bucketI
 
 template <class KeyT, class ValueT, class HashFuncT>
 SharedVariantLock
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_mutex *mutexAddress,
-								    ValueLockType lockType)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_mutex *valueMutexAddress,
+								    ValueLockType lockTypeRequested,
+								    std::shared_mutex *bucketMutexAddress)
 {
-  static thread_local LockMap value_mutex_to_lock;
+  if (lockTypeRequested == ValueLockType::WRITE)
+    {
+      assert (bucketMutexAddress != nullptr);
+    }
 
-  auto it = value_mutex_to_lock.find (mutexAddress);
+  static thread_local LockMap value_mutex_to_lock;
+  auto it = value_mutex_to_lock.find (valueMutexAddress);
 
   // Reasons for using shared_ptr:
   // - it allows for a custom destructor which we need
@@ -307,13 +313,13 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
     {
       auto [weakVariantLock, valueLockType] = it->second;
       sharedVariantLock = weakVariantLock.lock ();
-      if (valueLockType == lockType)
+      if (valueLockType == lockTypeRequested)
 	{
 	  return sharedVariantLock;
 	}
       else
 	{
-	  if (lockType == ValueLockType::READ)
+	  if (lockTypeRequested == ValueLockType::READ)
 	    {
 	      return sharedVariantLock;
 	    }
@@ -322,29 +328,38 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 	}
     }
 
-  if (lockType == ValueLockType::READ)
+  if (lockTypeRequested == ValueLockType::READ)
     {
-      auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
-	value_mutex_to_lock.erase (mutexAddress);
+      print ("Value - Request read lock for mutex: ", valueMutexAddress);
+      auto sharedReadLock = SharedReadLock (new ReadLock (*valueMutexAddress), [valueMutexAddress] (auto *p) {
+	print ("Value - Delete read lock for mutex: ", valueMutexAddress);
+	value_mutex_to_lock.erase (valueMutexAddress);
 	delete p;
       });
+      print ("Value - Create read lock for mutex: ", valueMutexAddress);
       auto lock = std::make_shared<VariantLock> (sharedReadLock);
-      auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
+      auto resultInsert =
+	value_mutex_to_lock.insert (std::make_pair (valueMutexAddress, std::make_tuple (lock, lockTypeRequested)));
       assert (resultInsert.second);
       return lock;
     }
 
   // this is the write case.
-  auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
-    value_mutex_to_lock.erase (mutexAddress);
+  auto tempBucketMutex = getBucketLockFor (bucketMutexAddress, ValueLockType::WRITE);
+  print ("Value - Request write lock for mutex: ", valueMutexAddress);
+  auto sharedWriteLock = SharedWriteLock (new WriteLock (*valueMutexAddress), [valueMutexAddress] (auto *p) {
+    print ("Value - Delete write lock for mutex: ", valueMutexAddress);
+    value_mutex_to_lock.erase (valueMutexAddress);
     delete p;
   });
+  print ("Value - Create write lock for mutex: ", valueMutexAddress);
   auto lock = std::make_shared<VariantLock> (sharedWriteLock);
   if (lock_needs_to_change)
     {
       *sharedVariantLock = *lock;
     }
-  auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
+  auto resultInsert =
+    value_mutex_to_lock.insert (std::make_pair (valueMutexAddress, std::make_tuple (lock, lockTypeRequested)));
   assert (resultInsert.second);
   return lock;
 }
@@ -370,12 +385,13 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
 
   if (lockTypeRequested == ValueLockType::READ)
     {
+      print ("Bucket - Request read lock for mutex: ", mutexAddress);
       auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
-	print ("Delete read lock for mutex: ", mutexAddress);
+	print ("Bucket - Delete read lock for mutex: ", mutexAddress);
 	bucket_mutex_to_lock.erase (mutexAddress);
 	delete p;
       });
-      print ("Create read lock for mutex: ", mutexAddress);
+      print ("Bucket - Create read lock for mutex: ", mutexAddress);
 
       auto lock = std::make_shared<VariantLock> (sharedReadLock);
       auto resultInsert =
@@ -385,13 +401,13 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
     }
 
   // this is the write case.
+  print ("Bucket - Request write lock for mutex: ", mutexAddress);
   auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
-    print ("Delete write lock for mutex: ", mutexAddress);
-
+    print ("Bucket - Delete write lock for mutex: ", mutexAddress);
     bucket_mutex_to_lock.erase (mutexAddress);
     delete p;
   });
-  print ("Created write lock for mutex: ", mutexAddress);
+  print ("Bucket - Create write lock for mutex: ", mutexAddress);
 
   auto lock = std::make_shared<VariantLock> (sharedWriteLock);
   auto resultInsert =

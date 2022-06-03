@@ -25,7 +25,6 @@ public:
     valueIndex = aValueIndex;
     bucketLock = aBucketLock;
     valueLock = aValueLock;
-    valueLockType = isWriteLocked () ? ValueLockType::WRITE : ValueLockType::READ;
   }
 
   Iterator (const Iterator &other)
@@ -38,7 +37,6 @@ public:
     valueIndex = other.valueIndex;
     bucketLock = other.bucketLock;
     valueLock = other.valueLock;
-    valueLockType = other.valueLockType;
   }
 
   ~Iterator ()
@@ -59,7 +57,6 @@ public:
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
     valueLock = other.valueLock;
-    valueLockType = other.valueLockType;
 
     return *this;
   }
@@ -71,7 +68,7 @@ public:
   }
 
   std::pair<KeyT, ValueT> *
-  operator-> () const
+  operator->() const
   {
     return keyValue;
   }
@@ -118,12 +115,6 @@ private:
     valueIndex = aValueIndex;
   }
 
-  bool
-  isWriteLocked () const
-  {
-    return std::get_if<SharedWriteLock> (&(*valueLock));
-  }
-
 private:
   using Bucket = bucket<KeyT, ValueT, HashFuncT>;
   using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
@@ -137,7 +128,6 @@ private:
   int valueIndex;
   SharedVariantLock bucketLock;
   SharedVariantLock valueLock;
-  ValueLockType valueLockType;
 
   friend Map;
   friend Bucket;
