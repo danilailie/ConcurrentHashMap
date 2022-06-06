@@ -3,6 +3,7 @@
 
 #include <variant>
 
+#include "internal_value.hpp"
 #include "unordered_map_utils.hpp"
 
 template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
@@ -13,13 +14,14 @@ template <class KeyT, class ValueT, class HashFuncT> class Iterator
 {
 public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
+  using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
 
-  Iterator (std::pair<KeyT, ValueT> *aKeyValue, Map const *const aMap, int aBucketIndex, int aValueIndex,
+  Iterator (std::shared_ptr<const InternalValue> value, Map const *const aMap, int aBucketIndex, int aValueIndex,
 	    SharedVariantLock aBucketLock, SharedVariantLock aValueLock)
   {
-    key = aKeyValue->first;
+    key = value->keyValue.first;
+    internalValue = value;
     map = aMap;
-    keyValue = aKeyValue;
 
     bucketIndex = aBucketIndex;
     valueIndex = aValueIndex;
@@ -31,8 +33,8 @@ public:
   Iterator (const Iterator &other)
   {
     key = other.key;
+    internalValue = other.internalValue;
     map = other.map;
-    keyValue = other.keyValue;
 
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
@@ -54,8 +56,8 @@ public:
       }
 
     map = other.map;
+    internalValue = other.internalValue;
     key = other.key;
-    keyValue = other.keyValue;
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
     valueLock = other.valueLock;
@@ -67,13 +69,15 @@ public:
   std::pair<KeyT, ValueT> &
   operator* () const
   {
-    return *keyValue;
+    std::pair<KeyT, ValueT> *keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&(internalValue->keyValue));
+    return *keyValueP;
   }
 
   std::pair<KeyT, ValueT> *
-  operator-> () const
+  operator->() const
   {
-    return keyValue;
+    std::pair<KeyT, ValueT> *keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&(internalValue->keyValue));
+    return keyValueP;
   }
 
   bool
@@ -110,8 +114,9 @@ public:
   }
 
 private:
-  Iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex) : keyValue (nullptr)
+  Iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex)
   {
+    internalValue = std::shared_ptr<InternalValue> ();
     key = aKey;
     map = aMap;
     bucketIndex = aBucketIndex;
@@ -126,12 +131,11 @@ private:
 
 private:
   using Bucket = bucket<KeyT, ValueT, HashFuncT>;
-  using InternalValue = internal_value<KeyT, ValueT, HashFuncT>;
 
   KeyT key;
   const Map *map;
 
-  std::pair<KeyT, ValueT> *keyValue;
+  std::shared_ptr<const InternalValue> internalValue;
 
   int bucketIndex;
   int valueIndex;

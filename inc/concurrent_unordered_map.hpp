@@ -227,14 +227,14 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey)
   auto hashResult = hashFunc (aKey);
   int bucketIndex = int (hashResult) % currentBucketCount;
 
-  return buckets[bucketIndex].find (this, bucketIndex, aKey, false, ValueLockType::WRITE);
+  return buckets[bucketIndex].find (this, bucketIndex, aKey, true, ValueLockType::WRITE);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
 bool
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::erase (const iterator &anIterator)
 {
-  return erase (anIterator.getKey ());
+  return erase (anIterator.key);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -285,7 +285,6 @@ SharedVariantLock
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_mutex *mutexAddress,
 								    ValueLockType lockType)
 {
-  using LockMap = std::map<std::shared_mutex *, std::tuple<WeakVariantLock, ValueLockType>>;
   static thread_local LockMap value_mutex_to_lock;
 
   auto it = value_mutex_to_lock.find (mutexAddress);
@@ -347,7 +346,6 @@ SharedVariantLock
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared_mutex *mutexAddress,
 								     ValueLockType lockType)
 {
-  using LockMap = std::map<std::shared_mutex *, std::tuple<WeakVariantLock, ValueLockType>>;
   static thread_local LockMap bucket_mutex_to_lock;
 
   SharedVariantLock sharedVariantLock;

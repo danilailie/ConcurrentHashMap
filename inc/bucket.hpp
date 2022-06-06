@@ -146,10 +146,10 @@ public:
   {
     using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
 
-    auto readBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
-
+    auto realBucketLock = Map::getBucketLockFor (&(*bucketMutex), valueLockType);
     SharedVariantLock noBucketLock;
-    auto bucketLock = withBucketLock ? readBucketLock : noBucketLock;
+
+    auto bucketLock = withBucketLock ? realBucketLock : noBucketLock;
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
@@ -196,7 +196,6 @@ private:
 	}
     }
 
-    using SharedLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
     auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::WRITE);
     std::vector<std::shared_ptr<InternalValue>> newValues;
     std::size_t count = 0;
@@ -205,9 +204,7 @@ private:
       {
 	if (values[i]->isAvailable ())
 	  {
-	    auto emptyBucketLock = SharedVariantLock ();
-	    auto valueIt = values[i]->getIterator (aMap, bucketIndex, i, emptyBucketLock, true);
-	    newValues.push_back (std::make_shared<InternalValue> (std::make_pair (valueIt->first, valueIt->second)));
+	    newValues.push_back (values[i]);
 	    count++;
 	  }
       }

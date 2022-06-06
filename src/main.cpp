@@ -195,31 +195,21 @@ main ()
 {
   using namespace std::chrono_literals;
   std::cout << "Using " << std::thread::hardware_concurrency () << " threads...\n";
-  concurrent_unordered_map<int, int> myMap;
-  //   std::unordered_map<int, std::shared_ptr<int>> standardMap;
+  concurrent_unordered_map<int, std::string> myMap;
 
-  //   timeInsertOperation (myMap, "Concurrent Map", false);
-  //   timeInsertOperation (standardMap, "Standard Map", true);
+  myMap.insert (std::make_pair (2, "two"));
 
-  //   timeFindOperation (myMap, "Concurrent Map", false);
-  //   timeFindOperation (standardMap, "Standard Map", true);
-  //   timeFindLockOperation (myMap);
+  std::thread t ([&] () {
+    auto it_thread = myMap.find (2);
+    myMap.erase (it_thread);
+    std::this_thread::sleep_for (100ms);
+  });
 
-  //   timeTraverseOperation (myMap, "Concurrent Map", false);
-  //   timeTraverseOperation (standardMap, "Standard Map", true);
+  {
+    auto it = myMap.find (2);
+  }
 
-  //   timeEraseOperation (myMap, "Concurrent Map", false);
-  //   timeEraseOperation (standardMap, "Standard Map", true);
-
-  myMap.insert (std::make_pair (7, 7));
-  auto findIt = std::as_const (myMap).find (7); // read lock
-
-  myMap.erase (7); // write lock
-
-  std::this_thread::sleep_for (3s);
-  std::cout << "Sleep done.\n";
-
-  // We should see a write lock dest now.
+  t.join ();
 
   return 0;
 }
