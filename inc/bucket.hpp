@@ -47,7 +47,13 @@ public:
 	  }
       }
 
-    if (foundPosition != -1 && values[foundPosition]->isAvailable ()) // there is a value with this key available
+    bool is_value_available = false;
+    if (foundPosition != -1)
+      {
+	is_value_available = values[foundPosition]->isAvailable ();
+      }
+
+    if (foundPosition != -1 && is_value_available) // there is a value with this key available
       {
 	auto it =
 	  values[foundPosition]->getIterator (map, bucketIndex, foundPosition, emptyBucketMutex, isWriteLockedValue);
@@ -61,7 +67,7 @@ public:
 	insertPosition = int (values.size ()) - 1;
       }
 
-    if (foundPosition != -1 && !values[foundPosition]->isAvailable ()) // key was found, but previously erased.
+    if (foundPosition != -1 && !is_value_available) // key was found, but previously erased.
       {
 	values[foundPosition]->setAvailable ();
 	values[foundPosition]->updateValue (aKeyValuePair.second);

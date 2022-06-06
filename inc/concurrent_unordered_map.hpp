@@ -307,9 +307,10 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 	{
 	  if (lockType == ValueLockType::READ)
 	    {
-	      return sharedVariantLock;
+	      return sharedVariantLock; // If we have Write lock, and Read lock is needed, we pass the existing Write
+					// lock
 	    }
-	  *sharedVariantLock = VariantLock ();
+	  *sharedVariantLock = VariantLock (); // This will release the lock and call the destructor
 	  lock_needs_to_change = true;
 	}
     }
@@ -332,6 +333,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
     delete p;
   });
   auto lock = std::make_shared<VariantLock> (sharedWriteLock);
+  // We change Read lock to Write lock for all iterators that reference the same variant
   if (lock_needs_to_change)
     {
       *sharedVariantLock = *lock;
@@ -354,7 +356,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
   if (it != bucket_mutex_to_lock.end ())
     {
       auto [weakVariantLock, valueLockType] = it->second;
-      auto sharedVariantLock = weakVariantLock.lock ();
+      sharedVariantLock = weakVariantLock.lock ();
       if (valueLockType == lockType)
 	{
 	  return sharedVariantLock;
@@ -365,7 +367,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
 	    {
 	      return sharedVariantLock;
 	    }
-	  *sharedVariantLock = VariantLock ();
+	  *sharedVariantLock = VariantLock (); // This will release the lock and call the destructor
 	  lock_needs_to_change = true;
 	}
     }
@@ -388,6 +390,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
     delete p;
   });
   auto lock = std::make_shared<VariantLock> (sharedWriteLock);
+  // We change Read lock to Write lock for all iterators that reference the same variant
   if (lock_needs_to_change)
     {
       *sharedVariantLock = *lock;

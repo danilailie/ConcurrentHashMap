@@ -26,10 +26,6 @@ public:
     valueMutex = std::make_unique<std::shared_mutex> ();
   }
 
-  ~internal_value ()
-  {
-  }
-
   bool
   compareKey (const KeyT &aKey) const
   {
