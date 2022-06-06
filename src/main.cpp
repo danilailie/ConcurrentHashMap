@@ -197,22 +197,16 @@ main ()
   std::cout << "Using " << std::thread::hardware_concurrency () << " threads...\n";
   concurrent_unordered_map<int, std::string> myMap;
 
-  myMap.insert (std::make_pair (7, "seven"));
+  myMap.insert (std::make_pair (2, "two"));
 
   std::thread t ([&] () {
-    auto it_thread = myMap.find (7);
-    print ("Thread t has iterator.", nullptr);
+    auto it_thread = myMap.find (2);
     myMap.erase (it_thread);
-    print ("Iterator erased. Thread t waits.", nullptr);
-    std::this_thread::sleep_for (1s);
+    std::this_thread::sleep_for (100ms);
   });
 
   {
-    auto it = myMap.find (7);
-    print ("Main thread has iterator.", nullptr);
-    myMap.erase (it);
-    print ("Iterator erased. Main thread waits.", nullptr);
-    std::this_thread::sleep_for (1s);
+    auto it = myMap.find (2);
   }
 
   t.join ();

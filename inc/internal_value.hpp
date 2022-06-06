@@ -9,7 +9,8 @@
 
 template <class KeyT, class ValueT, class HashFuncT> class concurrent_unordered_map;
 
-template <class KeyT, class ValueT, class HashFuncT> class internal_value
+template <class KeyT, class ValueT, class HashFuncT>
+class internal_value : public std::enable_shared_from_this<internal_value<KeyT, ValueT, HashFuncT>>
 {
 public:
   using Map = concurrent_unordered_map<KeyT, ValueT, HashFuncT>;
@@ -23,6 +24,11 @@ public:
   internal_value (const std::pair<KeyT, ValueT> &aKeyValuePair) : isMarkedForDelete (false), keyValue (aKeyValuePair)
   {
     valueMutex = std::make_unique<std::shared_mutex> ();
+  }
+
+  ~internal_value ()
+  {
+    std::cout << "~internal_value()\n";
   }
 
   bool
@@ -89,8 +95,8 @@ public:
 	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
       }
 
-    auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
-    return Iterator (keyValueP, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
+    auto self = this->shared_from_this ();
+    return Iterator (self, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
   }
 
   std::optional<Iterator>
@@ -101,8 +107,8 @@ public:
 
     if (!isMarkedForDelete && keyValue.first == key)
       {
-	auto keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
-	return Iterator (keyValueP, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
+	auto self = this->shared_from_this ();
+	return Iterator (self, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
       }
 
     return {};
@@ -134,6 +140,7 @@ private:
   std::pair<KeyT, ValueT> keyValue;
 
   friend Map;
+  friend Iterator;
 };
 
 #endif
