@@ -32,6 +32,8 @@ enum class ValueLockType
   WRITE
 };
 
+using LockMap = std::map<std::shared_mutex *, std::tuple<WeakVariantLock, ValueLockType>>;
+
 uint64_t
 getNextPrimeNumber (const uint64_t &currentNumber)
 {

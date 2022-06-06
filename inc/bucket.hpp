@@ -146,10 +146,10 @@ public:
   {
     using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
 
-    auto readBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
-
+    auto realBucketLock = Map::getBucketLockFor (&(*bucketMutex), valueLockType);
     SharedVariantLock noBucketLock;
-    auto bucketLock = withBucketLock ? readBucketLock : noBucketLock;
+
+    auto bucketLock = withBucketLock ? realBucketLock : noBucketLock;
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
