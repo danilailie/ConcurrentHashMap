@@ -28,7 +28,6 @@ public:
 
   ~internal_value ()
   {
-    std::cout << "~internal_value()\n";
   }
 
   bool
@@ -119,7 +118,7 @@ public:
   {
     auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
 
-    it.keyValue = const_cast<std::pair<KeyT, ValueT> *> (&keyValue);
+    it.internalValue = this->shared_from_this ();
     it.key = keyValue.first;
     it.bucketIndex = bucketIndex;
     it.valueIndex = valueIndex;

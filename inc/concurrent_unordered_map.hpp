@@ -14,14 +14,6 @@
 #include "iterator.hpp"
 #include "unordered_map_utils.hpp"
 
-void
-print (const std::string &aMessage, std::shared_mutex *mutex)
-{
-  static std::mutex coutMutex;
-  auto lock = std::unique_lock<std::mutex> (coutMutex);
-  std::cout << aMessage << " Mutex address: " << mutex << " Tread id: " << std::this_thread::get_id () << "\n";
-}
-
 template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class concurrent_unordered_map
 {
 public:
@@ -324,13 +316,10 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 
   if (lockType == ValueLockType::READ)
     {
-      print ("Value - Request - Read", mutexAddress);
       auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
-	print ("Value - Delete - Read", mutexAddress);
 	value_mutex_to_lock.erase (mutexAddress);
 	delete p;
       });
-      print ("Value - Created - Read", mutexAddress);
       auto lock = std::make_shared<VariantLock> (sharedReadLock);
       auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
       assert (resultInsert.second);
@@ -338,13 +327,10 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
     }
 
   // this is the write case.
-  print ("Value - Request - Write", mutexAddress);
   auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
-    print ("Value - Delete - Write", mutexAddress);
     value_mutex_to_lock.erase (mutexAddress);
     delete p;
   });
-  print ("Value - Created - Write", mutexAddress);
   auto lock = std::make_shared<VariantLock> (sharedWriteLock);
   if (lock_needs_to_change)
     {
@@ -386,13 +372,10 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
 
   if (lockType == ValueLockType::READ)
     {
-      print ("Bucket - Request - Read", mutexAddress);
       auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
-	print ("Bucket - Delete - Read", mutexAddress);
 	bucket_mutex_to_lock.erase (mutexAddress);
 	delete p;
       });
-      print ("Bucket - Created - Read", mutexAddress);
       auto lock = std::make_shared<VariantLock> (sharedReadLock);
       auto resultInsert = bucket_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
       assert (resultInsert.second);
@@ -400,13 +383,10 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
     }
 
   // this is the write case.
-  print ("Bucket - Request - Write", mutexAddress);
   auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
-    print ("Bucket - Delete - Write", mutexAddress);
     bucket_mutex_to_lock.erase (mutexAddress);
     delete p;
   });
-  print ("Bucket - Created - Write", mutexAddress);
   auto lock = std::make_shared<VariantLock> (sharedWriteLock);
   if (lock_needs_to_change)
     {

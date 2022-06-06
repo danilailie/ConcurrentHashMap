@@ -45,7 +45,6 @@ public:
 
   ~Iterator ()
   {
-    std::cout << "~Iterator ()\n";
   }
 
   Iterator &
@@ -57,7 +56,8 @@ public:
       }
 
     map = other.map;
-    internalValue = other.inte;
+    internalValue = other.internalValue;
+    key = other.key;
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
     valueLock = other.valueLock;
@@ -69,13 +69,15 @@ public:
   std::pair<KeyT, ValueT> &
   operator* () const
   {
-    return internalValue->keyValue;
+    std::pair<KeyT, ValueT> *keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&(internalValue->keyValue));
+    return *keyValueP;
   }
 
   std::pair<KeyT, ValueT> *
   operator->() const
   {
-    return &(internalValue->keyValue);
+    std::pair<KeyT, ValueT> *keyValueP = const_cast<std::pair<KeyT, ValueT> *> (&(internalValue->keyValue));
+    return keyValueP;
   }
 
   bool
