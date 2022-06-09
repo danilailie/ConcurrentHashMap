@@ -25,19 +25,17 @@ public:
   std::size_t
   getSize () const
   {
-    auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
+    auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), LockType::READ);
     return currentSize;
   }
 
   std::pair<Iterator, bool>
-  insert (Map const *const map, int bucketIndex, const std::pair<KeyT, ValueT> &aKeyValuePair,
-	  bool isWriteLockedValue = false)
+  insert (Map const *const map, int bucketIndex, const std::pair<KeyT, ValueT> &aKeyValuePair)
   {
-    auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::WRITE);
+    auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), LockType::WRITE);
 
     int foundPosition = -1;
     int insertPosition = -1;
-    SharedVariantLock emptyBucketMutex;
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
@@ -55,8 +53,7 @@ public:
 
     if (foundPosition != -1 && is_value_available) // there is a value with this key available
       {
-	auto it =
-	  values[foundPosition]->getIterator (map, bucketIndex, foundPosition, emptyBucketMutex, isWriteLockedValue);
+	auto it = values[foundPosition]->getIterator (map, bucketIndex, foundPosition, bucketLock, LockType::WRITE);
 	return std::make_pair (it, false);
       }
 
@@ -69,20 +66,18 @@ public:
 
     if (foundPosition != -1 && !is_value_available) // key was found, but previously erased.
       {
-	values[foundPosition]->setAvailable ();
 	values[foundPosition]->updateValue (aKeyValuePair.second);
 	insertPosition = foundPosition;
       }
 
-    auto it =
-      values[insertPosition]->getIterator (map, bucketIndex, insertPosition, emptyBucketMutex, isWriteLockedValue);
+    auto it = values[insertPosition]->getIterator (map, bucketIndex, insertPosition, bucketLock, LockType::WRITE);
     return std::make_pair (it, true);
   }
 
   int
   erase (const KeyT &aKey)
   {
-    auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::WRITE);
+    auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), LockType::WRITE);
     for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i]->compareKey (aKey))
@@ -98,7 +93,7 @@ public:
   Iterator
   begin (Map const *const aMap, int bucketIndex) const
   {
-    auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
+    auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), LockType::READ);
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
@@ -133,7 +128,7 @@ public:
     else // need to return the first valid element in this bucket
       {
 	using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
-	auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
+	auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), LockType::READ);
 	int nextValueIndex = getNextValueIndex (-1);
 
 	if (nextValueIndex == -1)
@@ -148,18 +143,13 @@ public:
   }
 
   Iterator
-  find (Map const *const map, int bucketIndex, KeyT key, bool withBucketLock, ValueLockType valueLockType) const
+  find (Map const *const map, int bucketIndex, KeyT key, LockType lockType) const
   {
-    using SharedReadLock = std::shared_ptr<std::shared_lock<std::shared_mutex>>;
-
-    auto realBucketLock = Map::getBucketLockFor (&(*bucketMutex), valueLockType);
-    SharedVariantLock noBucketLock;
-
-    auto bucketLock = withBucketLock ? realBucketLock : noBucketLock;
+    auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), lockType);
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
-	auto result = values[i]->getIteratorForKey (map, key, bucketIndex, i, bucketLock, valueLockType);
+	auto result = values[i]->getIteratorForKey (map, key, bucketIndex, i, bucketLock, lockType);
 	if (result)
 	  {
 	    return *result;
@@ -172,7 +162,7 @@ public:
   int
   getNextValueIndex (int index) const
   {
-    auto valueLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
+    auto valueLock = Map::getBucketLockFor (&(*bucketMutex), LockType::READ);
     for (int i = index + 1; i < int (values.size ()); ++i)
       {
 	if (values[i]->isAvailable ())
@@ -195,14 +185,14 @@ private:
   eraseUnavailableValues (Map const *const aMap, const int bucketIndex, const double threshold)
   {
     {
-      auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::READ);
+      auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), LockType::READ);
       if (double (currentSize) > double (values.size ()) * threshold)
 	{
 	  return currentSize;
 	}
     }
 
-    auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), ValueLockType::WRITE);
+    auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), LockType::WRITE);
     std::vector<std::shared_ptr<InternalValue>> newValues;
     std::size_t count = 0;
 

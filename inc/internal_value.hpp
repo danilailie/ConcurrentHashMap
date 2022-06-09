@@ -29,7 +29,7 @@ public:
   bool
   compareKey (const KeyT &aKey) const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), LockType::READ);
     if (!isMarkedForDelete)
       {
 	return keyValue.first == aKey;
@@ -40,21 +40,21 @@ public:
   std::pair<KeyT, ValueT>
   getKeyValuePair () const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), LockType::READ);
     return keyValue;
   }
 
   void
   erase ()
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::WRITE);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), LockType::WRITE);
     isMarkedForDelete = true;
   }
 
   bool
   isAvailable () const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), LockType::READ);
     return !isMarkedForDelete;
   }
 
@@ -68,7 +68,7 @@ public:
   std::optional<KeyT>
   getKey () const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), LockType::READ);
     if (!isMarkedForDelete)
       {
 	return keyValue.first;
@@ -78,27 +78,18 @@ public:
 
   Iterator
   getIterator (Map const *const aMap, int bucketIndex, int valueIndex, SharedVariantLock bucketLock,
-	       bool isWriteValueLocked = false) const
+	       LockType lockType) const
   {
-    SharedVariantLock valueLock;
-    if (isWriteValueLocked)
-      {
-	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::WRITE);
-      }
-    else
-      {
-	valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
-      }
-
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), lockType);
     auto self = this->shared_from_this ();
     return Iterator (self, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
   }
 
   std::optional<Iterator>
   getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedVariantLock bucketLock,
-		     ValueLockType valueLockType) const
+		     LockType lockType) const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), valueLockType);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), lockType);
 
     if (!isMarkedForDelete && keyValue.first == key)
       {
@@ -112,7 +103,7 @@ public:
   void
   updateIterator (Iterator &it, int bucketIndex, int valueIndex, SharedVariantLock bucketLock) const
   {
-    auto valueLock = Map::getValueLockFor (&(*valueMutex), ValueLockType::READ);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), LockType::READ);
 
     it.internalValue = this->shared_from_this ();
     it.key = keyValue.first;
@@ -125,7 +116,8 @@ public:
   void
   updateValue (const ValueT &newValue)
   {
-    std::unique_lock<std::shared_mutex> lock (*valueMutex);
+    auto valueLock = Map::getValueLockFor (&(*valueMutex), LockType::WRITE);
+    isMarkedForDelete = false;
     keyValue.second = newValue;
   }
 

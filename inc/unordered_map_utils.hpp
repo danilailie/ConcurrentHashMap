@@ -26,13 +26,13 @@ InvalidKeyValue ()
   return KeyT ();
 }
 
-enum class ValueLockType
+enum class LockType
 {
   READ = 0,
   WRITE
 };
 
-using LockMap = std::map<std::shared_mutex *, std::tuple<WeakVariantLock, ValueLockType>>;
+using LockMap = std::map<std::shared_mutex *, std::tuple<WeakVariantLock, LockType>>;
 
 uint64_t
 getNextPrimeNumber (const uint64_t &currentNumber)

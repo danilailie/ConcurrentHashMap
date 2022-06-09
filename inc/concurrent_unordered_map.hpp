@@ -94,8 +94,8 @@ private:
 private:
   std::size_t getNextPopulatedBucketIndex (std::size_t anIndex) const;
   SharedVariantLock aquireBucketLock (int bucketIndex) const;
-  static SharedVariantLock getValueLockFor (std::shared_mutex *mutexAddress, ValueLockType lockType);
-  static SharedVariantLock getBucketLockFor (std::shared_mutex *mutexAddress, ValueLockType lockType);
+  static SharedVariantLock getValueLockFor (std::shared_mutex *mutexAddress, LockType lockType);
+  static SharedVariantLock getBucketLockFor (std::shared_mutex *mutexAddress, LockType lockType);
 
   /// <summary>Gets the key of the first element - equivalent to begin()</summary>
   /// <param></param>
@@ -185,7 +185,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::insert (const std::pair<KeyT,
   auto hashResult = hashFunc (aKeyValuePair.first);
   int bucketIndex = int (hashResult) % currentBucketCount;
 
-  auto result = buckets[bucketIndex].insert (this, bucketIndex, aKeyValuePair, true);
+  auto result = buckets[bucketIndex].insert (this, bucketIndex, aKeyValuePair);
   if (result.second)
     {
       ++valueCount;
@@ -217,7 +217,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey) const
   auto hashResult = hashFunc (aKey);
   int bucketIndex = int (hashResult) % currentBucketCount;
 
-  return buckets[bucketIndex].find (this, bucketIndex, aKey, false, ValueLockType::READ);
+  return buckets[bucketIndex].find (this, bucketIndex, aKey, LockType::READ);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -227,7 +227,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::find (const KeyT &aKey)
   auto hashResult = hashFunc (aKey);
   int bucketIndex = int (hashResult) % currentBucketCount;
 
-  return buckets[bucketIndex].find (this, bucketIndex, aKey, true, ValueLockType::WRITE);
+  return buckets[bucketIndex].find (this, bucketIndex, aKey, LockType::WRITE);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -277,13 +277,12 @@ template <class KeyT, class ValueT, class HashFuncT>
 SharedVariantLock
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::aquireBucketLock (int bucketIndex) const
 {
-  return getBucketLockFor (&(*buckets[bucketIndex].bucketMutex), ValueLockType::READ);
+  return getBucketLockFor (&(*buckets[bucketIndex].bucketMutex), LockType::READ);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
 SharedVariantLock
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_mutex *mutexAddress,
-								    ValueLockType lockType)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_mutex *mutexAddress, LockType lockType)
 {
   static thread_local LockMap value_mutex_to_lock;
 
@@ -305,7 +304,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 	}
       else
 	{
-	  if (lockType == ValueLockType::READ)
+	  if (lockType == LockType::READ)
 	    {
 	      return sharedVariantLock; // If we have Write lock, and Read lock is needed, we pass the existing Write
 					// lock
@@ -315,7 +314,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 	}
     }
 
-  if (lockType == ValueLockType::READ)
+  if (lockType == LockType::READ)
     {
       auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
 	value_mutex_to_lock.erase (mutexAddress);
@@ -345,8 +344,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 
 template <class KeyT, class ValueT, class HashFuncT>
 SharedVariantLock
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared_mutex *mutexAddress,
-								     ValueLockType lockType)
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared_mutex *mutexAddress, LockType lockType)
 {
   static thread_local LockMap bucket_mutex_to_lock;
 
@@ -363,7 +361,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
 	}
       else
 	{
-	  if (lockType == ValueLockType::READ)
+	  if (lockType == LockType::READ)
 	    {
 	      return sharedVariantLock;
 	    }
@@ -372,7 +370,7 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
 	}
     }
 
-  if (lockType == ValueLockType::READ)
+  if (lockType == LockType::READ)
     {
       auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
 	bucket_mutex_to_lock.erase (mutexAddress);
