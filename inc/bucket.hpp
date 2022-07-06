@@ -99,7 +99,7 @@ public:
       {
 	if (values[i]->isAvailable ())
 	  {
-	    return values[i]->getIterator (aMap, bucketIndex, i, variantBucketLock);
+	    return values[i]->getIterator (aMap, bucketIndex, i, variantBucketLock, LockType::READ);
 	  }
       }
 

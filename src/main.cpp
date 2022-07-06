@@ -195,23 +195,32 @@ main ()
 {
   using namespace std::chrono_literals;
   std::cout << "Using " << std::thread::hardware_concurrency () << " threads...\n";
-  concurrent_unordered_map<int, std::string> myMap;
+  concurrent_unordered_map<int, std::shared_ptr<int>> myMap;
+  std::unordered_map<int, std::shared_ptr<int>> standardMap;
 
-  myMap.insert (std::make_pair (2, "two"));
+  timeInsertOperation (myMap, "Concurrent Map", false);
+  timeInsertOperation (standardMap, "Standard Map", true);
 
-  std::thread t ([&] () {
-    auto it_thread = myMap.find (2);
-    myMap.erase (it_thread);
-    std::this_thread::sleep_for (100ms);
-  });
+  timeFindOperation (myMap, "Concurrent Map", false);
+  timeFindOperation (standardMap, "Standard Map", true);
+  timeFindLockOperation (myMap);
 
-  {
-    auto it = myMap.find (2);
-  }
+  timeTraverseOperation (myMap, "Concurrent Map", false);
+  timeTraverseOperation (standardMap, "Standard Map", true);
 
-  t.join ();
+  timeEraseOperation (myMap, "Concurrent Map", false);
+  timeEraseOperation (standardMap, "Standard Map", true);
 
-  std::cout << "Lock count: " << GlobalCounter::getLockCount () << "\n";
+  auto &averages = GlobalCounter::getAverages ();
+
+  for (auto it = averages.begin (); it != averages.end (); ++it)
+    {
+      std::cout << "Thread id: " << it->first << "\n";
+      std::cout << "-- Read counts: " << it->second.readOperationCount << "\n";
+      std::cout << "-- Average read lock time: " << it->second.averageMicrosecondsRead << " microseconds.\n";
+      std::cout << "-- Write counts: " << it->second.writeOperationCount << "\n";
+      std::cout << "-- Average write lock time: " << it->second.averageMicrosecondsWrite << " microseconds.\n";
+    }
 
   return 0;
 }

@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <thread>
+#include <unordered_map>
 
 #include "unordered_map_utils.hpp"
 
@@ -16,6 +17,15 @@ struct MutexAquireCounters
   std::thread::id threadID;
 };
 
+struct Averages
+{
+  uint64_t readOperationCount;
+  double averageMicrosecondsRead;
+
+  uint64_t writeOperationCount;
+  double averageMicrosecondsWrite;
+};
+
 class GlobalCounter
 {
 public:
@@ -27,8 +37,17 @@ public:
     return mutexLockCount;
   }
 
+  static std::unordered_map<std::thread::id, Averages> &
+  getAverages ()
+  {
+    return threadAverages;
+  }
+
 private:
   static std::atomic<uint64_t> mutexLockCount;
+  static std::mutex dataMutex;
+
+  static std::unordered_map<std::thread::id, Averages> threadAverages;
 };
 
 #endif
