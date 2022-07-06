@@ -211,5 +211,7 @@ main ()
 
   t.join ();
 
+  std::cout << "Lock count: " << GlobalCounter::getLockCount () << "\n";
+
   return 0;
 }

@@ -12,6 +12,7 @@
 #include "bucket.hpp"
 #include "internal_value.hpp"
 #include "iterator.hpp"
+#include "performanceCounters.hpp"
 #include "unordered_map_utils.hpp"
 
 template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class concurrent_unordered_map
@@ -96,6 +97,7 @@ private:
   SharedVariantLock aquireBucketLock (int bucketIndex) const;
   static SharedVariantLock getValueLockFor (std::shared_mutex *mutexAddress, LockType lockType);
   static SharedVariantLock getBucketLockFor (std::shared_mutex *mutexAddress, LockType lockType);
+  static SharedVariantLock aquireLockFor (std::shared_mutex *mutexAddress, LockType lockType, LockMap &lockMap);
 
   /// <summary>Gets the key of the first element - equivalent to begin()</summary>
   /// <param></param>
@@ -111,20 +113,6 @@ private:
   void lockResource (std::size_t &bucketIndex, int &valueIndex) const;
 
   void unlockResource (std::size_t &bucketIndex, int &valueIndex) const;
-
-  std::size_t
-  getNextPrimeNumber (const std::size_t &aValue)
-  {
-    std::vector<std::size_t> primes = { 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 10007, 20021, 40063 };
-    for (std::size_t i = 0; i < primes.size (); ++i)
-      {
-	if (primes[i] > aValue)
-	  {
-	    return primes[i];
-	  }
-      }
-    return 10007;
-  }
 
 private:
   HashFuncT hashFunc;
@@ -314,31 +302,12 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 	}
     }
 
-  if (lockType == LockType::READ)
-    {
-      auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
-	value_mutex_to_lock.erase (mutexAddress);
-	delete p;
-      });
-      auto lock = std::make_shared<VariantLock> (sharedReadLock);
-      auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
-      assert (resultInsert.second);
-      return lock;
-    }
-
-  // this is the write case.
-  auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
-    value_mutex_to_lock.erase (mutexAddress);
-    delete p;
-  });
-  auto lock = std::make_shared<VariantLock> (sharedWriteLock);
+  auto lock = aquireLockFor (mutexAddress, lockType, value_mutex_to_lock);
   // We change Read lock to Write lock for all iterators that reference the same variant
   if (lock_needs_to_change)
     {
       *sharedVariantLock = *lock;
     }
-  auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
-  assert (resultInsert.second);
   return lock;
 }
 
@@ -370,31 +339,52 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
 	}
     }
 
-  if (lockType == LockType::READ)
-    {
-      auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
-	bucket_mutex_to_lock.erase (mutexAddress);
-	delete p;
-      });
-      auto lock = std::make_shared<VariantLock> (sharedReadLock);
-      auto resultInsert = bucket_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
-      assert (resultInsert.second);
-      return lock;
-    }
-
-  // this is the write case.
-  auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
-    bucket_mutex_to_lock.erase (mutexAddress);
-    delete p;
-  });
-  auto lock = std::make_shared<VariantLock> (sharedWriteLock);
+  auto lock = aquireLockFor (mutexAddress, lockType, bucket_mutex_to_lock);
   // We change Read lock to Write lock for all iterators that reference the same variant
   if (lock_needs_to_change)
     {
       *sharedVariantLock = *lock;
     }
-  auto resultInsert = bucket_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
+  return lock;
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+SharedVariantLock
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::aquireLockFor (std::shared_mutex *mutexAddress, LockType lockType,
+								  LockMap &lockMap)
+{
+#ifdef ADD_PERFORMANCE_COUNTERS
+  MutexAquireCounters counters;
+  counters.startTimeAquire = std::chrono::steady_clock::now ();
+  counters.lockType = lockType;
+  counters.threadID = std::this_thread::get_id ();
+#endif
+
+  SharedVariantLock lock;
+  if (lockType == LockType::READ)
+    {
+      auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [&lockMap, mutexAddress] (auto *p) {
+	lockMap.erase (mutexAddress);
+	delete p;
+      });
+      lock = std::make_shared<VariantLock> (sharedReadLock);
+    }
+  else
+    {
+      auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [&lockMap, mutexAddress] (auto *p) {
+	lockMap.erase (mutexAddress);
+	delete p;
+      });
+      lock = std::make_shared<VariantLock> (sharedWriteLock);
+    }
+  auto resultInsert = lockMap.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
   assert (resultInsert.second);
+
+#ifdef ADD_PERFORMANCE_COUNTERS
+  counters.endTimeAquire = std::chrono::steady_clock::now ();
+  GlobalCounter::addMutexAquireCounters (counters);
+#endif
+
   return lock;
 }
 

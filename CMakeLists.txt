@@ -15,11 +15,14 @@ set(HEADERS
 )
 
 set(SOURCES 
+    src/performanceCounters.cpp
     src/large_object.cpp
     src/main.cpp
 )
 
 add_executable (ConcurrentHashMap ${HEADERS} ${SOURCES})
+
+target_compile_definitions(ConcurrentHashMap PRIVATE ADD_PERFORMANCE_COUNTERS)
 
 if(UNIX)
     target_link_libraries(ConcurrentHashMap pthread)
