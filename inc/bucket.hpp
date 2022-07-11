@@ -39,7 +39,8 @@ public:
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
-	if (values[i]->getKey () == aKeyValuePair.first)
+	auto key = values[i]->getKey ();
+	if (key.has_value () && key.value () == aKeyValuePair.first)
 	  {
 	    foundPosition = i;
 	  }
@@ -93,13 +94,13 @@ public:
   Iterator
   begin (Map const *const aMap, int bucketIndex) const
   {
-    auto variantBucketLock = Map::getBucketLockFor (&(*bucketMutex), LockType::READ);
+    auto bucketLock = Map::getBucketLockFor (&(*bucketMutex), LockType::READ);
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
 	if (values[i]->isAvailable ())
 	  {
-	    return values[i]->getIterator (aMap, bucketIndex, i, variantBucketLock);
+	    return values[i]->getIterator (aMap, bucketIndex, i, bucketLock, LockType::READ);
 	  }
       }
 
@@ -149,10 +150,10 @@ public:
 
     for (int i = 0; i < int (values.size ()); ++i)
       {
-	auto result = values[i]->getIteratorForKey (map, key, bucketIndex, i, bucketLock, lockType);
-	if (result)
+	auto it = values[i]->getIteratorForKey (map, key, bucketIndex, i, bucketLock, lockType);
+	if (it != map->end ())
 	  {
-	    return *result;
+	    return it;
 	  }
       }
 

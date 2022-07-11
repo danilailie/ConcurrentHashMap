@@ -12,6 +12,7 @@
 #include "bucket.hpp"
 #include "internal_value.hpp"
 #include "iterator.hpp"
+#include "performance_counters.hpp"
 #include "unordered_map_utils.hpp"
 
 template <class KeyT, class ValueT, class HashFuncT = std::hash<KeyT>> class concurrent_unordered_map
@@ -96,35 +97,18 @@ private:
   SharedVariantLock aquireBucketLock (int bucketIndex) const;
   static SharedVariantLock getValueLockFor (std::shared_mutex *mutexAddress, LockType lockType);
   static SharedVariantLock getBucketLockFor (std::shared_mutex *mutexAddress, LockType lockType);
+  static SharedVariantLock aquireLockFor (std::shared_mutex *mutexAddress, LockType lockType, LockMap &lockMap);
 
   /// <summary>Gets the key of the first element - equivalent to begin()</summary>
   /// <param></param>
   /// <returns></returns>
   KeyT getFirstKey () const;
 
-  /// <summary>Gets the key of the valid element that comes after the reference one. If there is no such element returns
-  /// an invalid key.</summary> <param name="bucketIndex"></param> <param name="valueIndex"></param> <returns></returns>
-  KeyT getNextElement (std::size_t &bucketIndex, int &valueIndex) const;
-
   void advanceIterator (iterator &it) const;
 
   void lockResource (std::size_t &bucketIndex, int &valueIndex) const;
 
   void unlockResource (std::size_t &bucketIndex, int &valueIndex) const;
-
-  std::size_t
-  getNextPrimeNumber (const std::size_t &aValue)
-  {
-    std::vector<std::size_t> primes = { 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 10007, 20021, 40063 };
-    for (std::size_t i = 0; i < primes.size (); ++i)
-      {
-	if (primes[i] > aValue)
-	  {
-	    return primes[i];
-	  }
-      }
-    return 10007;
-  }
 
 private:
   HashFuncT hashFunc;
@@ -175,7 +159,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::end () const
 {
-  return Iterator (InvalidKeyValue<KeyT> (), this, -1, -1);
+  return Iterator (this, true /*isEnd*/);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -314,31 +298,12 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getValueLockFor (std::shared_
 	}
     }
 
-  if (lockType == LockType::READ)
-    {
-      auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
-	value_mutex_to_lock.erase (mutexAddress);
-	delete p;
-      });
-      auto lock = std::make_shared<VariantLock> (sharedReadLock);
-      auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
-      assert (resultInsert.second);
-      return lock;
-    }
-
-  // this is the write case.
-  auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
-    value_mutex_to_lock.erase (mutexAddress);
-    delete p;
-  });
-  auto lock = std::make_shared<VariantLock> (sharedWriteLock);
+  auto lock = aquireLockFor (mutexAddress, lockType, value_mutex_to_lock);
   // We change Read lock to Write lock for all iterators that reference the same variant
   if (lock_needs_to_change)
     {
       *sharedVariantLock = *lock;
     }
-  auto resultInsert = value_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
-  assert (resultInsert.second);
   return lock;
 }
 
@@ -370,31 +335,52 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getBucketLockFor (std::shared
 	}
     }
 
-  if (lockType == LockType::READ)
-    {
-      auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [mutexAddress] (auto *p) {
-	bucket_mutex_to_lock.erase (mutexAddress);
-	delete p;
-      });
-      auto lock = std::make_shared<VariantLock> (sharedReadLock);
-      auto resultInsert = bucket_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
-      assert (resultInsert.second);
-      return lock;
-    }
-
-  // this is the write case.
-  auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [mutexAddress] (auto *p) {
-    bucket_mutex_to_lock.erase (mutexAddress);
-    delete p;
-  });
-  auto lock = std::make_shared<VariantLock> (sharedWriteLock);
+  auto lock = aquireLockFor (mutexAddress, lockType, bucket_mutex_to_lock);
   // We change Read lock to Write lock for all iterators that reference the same variant
   if (lock_needs_to_change)
     {
       *sharedVariantLock = *lock;
     }
-  auto resultInsert = bucket_mutex_to_lock.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
+  return lock;
+}
+
+template <class KeyT, class ValueT, class HashFuncT>
+SharedVariantLock
+concurrent_unordered_map<KeyT, ValueT, HashFuncT>::aquireLockFor (std::shared_mutex *mutexAddress, LockType lockType,
+								  LockMap &lockMap)
+{
+#ifdef ADD_PERFORMANCE_COUNTERS
+  MutexAquireCounters counters;
+  counters.startTimeAquire = std::chrono::steady_clock::now ();
+  counters.lockType = lockType;
+  counters.threadID = std::this_thread::get_id ();
+#endif
+
+  SharedVariantLock lock;
+  if (lockType == LockType::READ)
+    {
+      auto sharedReadLock = SharedReadLock (new ReadLock (*mutexAddress), [&lockMap, mutexAddress] (auto *p) {
+	lockMap.erase (mutexAddress);
+	delete p;
+      });
+      lock = std::make_shared<VariantLock> (sharedReadLock);
+    }
+  else
+    {
+      auto sharedWriteLock = SharedWriteLock (new WriteLock (*mutexAddress), [&lockMap, mutexAddress] (auto *p) {
+	lockMap.erase (mutexAddress);
+	delete p;
+      });
+      lock = std::make_shared<VariantLock> (sharedWriteLock);
+    }
+  auto resultInsert = lockMap.insert (std::make_pair (mutexAddress, std::make_tuple (lock, lockType)));
   assert (resultInsert.second);
+
+#ifdef ADD_PERFORMANCE_COUNTERS
+  counters.endTimeAquire = std::chrono::steady_clock::now ();
+  GlobalCounter::addMutexAquireCounters (counters);
+#endif
+
   return lock;
 }
 
@@ -411,33 +397,6 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getFirstKey () const
     }
 
   return -1;
-}
-
-template <class KeyT, class ValueT, class HashFuncT>
-KeyT
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketIndex, int &valueIndex) const
-{
-  int nextValueIndex = buckets[bucketIndex].getNextValueIndex (valueIndex);
-
-  if (nextValueIndex == -1)
-    {
-      int nextBucketIndex = int (getNextPopulatedBucketIndex (bucketIndex));
-      if (nextBucketIndex == -1)
-	{
-	  return InvalidKeyValue<KeyT> ();
-	}
-      else
-	{
-	  bucketIndex = nextBucketIndex;
-	  int position;
-	  return buckets[nextBucketIndex].getFirstKey (position);
-	}
-    }
-  else
-    {
-      valueIndex = nextValueIndex;
-      return buckets[bucketIndex].getKeyAt (valueIndex);
-    }
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
