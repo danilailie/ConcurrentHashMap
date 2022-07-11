@@ -27,6 +27,7 @@ public:
     valueIndex = aValueIndex;
     bucketLock = aBucketLock;
     valueLock = aValueLock;
+    isEnd = false;
   }
 
   Iterator (const Iterator &other)
@@ -39,6 +40,7 @@ public:
     valueIndex = other.valueIndex;
     bucketLock = other.bucketLock;
     valueLock = other.valueLock;
+    isEnd = other.isEnd;
   }
 
   ~Iterator ()
@@ -59,6 +61,7 @@ public:
     bucketIndex = other.bucketIndex;
     valueIndex = other.valueIndex;
     valueLock = other.valueLock;
+    isEnd = other.isEnd;
 
     return *this;
   }
@@ -78,15 +81,27 @@ public:
   }
 
   bool
-  operator== (const Iterator &another) const
+  operator== (const Iterator &other) const
   {
-    return map == another.map && key == another.key;
+    if (map != other.map)
+      {
+	return false;
+      }
+    auto onlyOneIsEnd = isEnd ^ other.isEnd;
+    auto bothAreEnd = isEnd == true && other.isEnd == true;
+
+    if (onlyOneIsEnd)
+      {
+	return false;
+      }
+    return (bothAreEnd || key == other.key);
   }
 
   bool
   operator!= (const Iterator &other) const
   {
-    return map != other.map || key != other.key;
+    auto result = !(*this == other);
+    return result;
   }
 
   Iterator &
@@ -98,7 +113,11 @@ public:
       {
 	bucketLock = map->aquireBucketLock (bucketIndex);
       }
-    map->advanceIterator (*this);
+
+    if (!isEnd)
+      {
+	map->advanceIterator (*this);
+      }
     return *this;
   }
 
@@ -111,13 +130,10 @@ public:
   }
 
 private:
-  Iterator (const KeyT &aKey, Map const *const aMap, int aBucketIndex, int aValueIndex)
+  Iterator (Map const *const aMap, bool isEndIterator)
   {
-    internalValue = std::shared_ptr<InternalValue> ();
-    key = aKey;
     map = aMap;
-    bucketIndex = aBucketIndex;
-    valueIndex = aValueIndex;
+    isEnd = isEndIterator;
   }
 
 private:
@@ -132,6 +148,8 @@ private:
   int valueIndex;
   SharedVariantLock bucketLock;
   SharedVariantLock valueLock;
+
+  bool isEnd;
 
   friend Map;
   friend Bucket;

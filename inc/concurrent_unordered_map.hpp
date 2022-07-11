@@ -104,10 +104,6 @@ private:
   /// <returns></returns>
   KeyT getFirstKey () const;
 
-  /// <summary>Gets the key of the valid element that comes after the reference one. If there is no such element returns
-  /// an invalid key.</summary> <param name="bucketIndex"></param> <param name="valueIndex"></param> <returns></returns>
-  KeyT getNextElement (std::size_t &bucketIndex, int &valueIndex) const;
-
   void advanceIterator (iterator &it) const;
 
   void lockResource (std::size_t &bucketIndex, int &valueIndex) const;
@@ -163,7 +159,7 @@ template <class KeyT, class ValueT, class HashFuncT>
 typename concurrent_unordered_map<KeyT, ValueT, HashFuncT>::iterator
 concurrent_unordered_map<KeyT, ValueT, HashFuncT>::end () const
 {
-  return Iterator (InvalidKeyValue<KeyT> (), this, -1, -1);
+  return Iterator (this, true /*isEnd*/);
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
@@ -401,33 +397,6 @@ concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getFirstKey () const
     }
 
   return -1;
-}
-
-template <class KeyT, class ValueT, class HashFuncT>
-KeyT
-concurrent_unordered_map<KeyT, ValueT, HashFuncT>::getNextElement (std::size_t &bucketIndex, int &valueIndex) const
-{
-  int nextValueIndex = buckets[bucketIndex].getNextValueIndex (valueIndex);
-
-  if (nextValueIndex == -1)
-    {
-      int nextBucketIndex = int (getNextPopulatedBucketIndex (bucketIndex));
-      if (nextBucketIndex == -1)
-	{
-	  return InvalidKeyValue<KeyT> ();
-	}
-      else
-	{
-	  bucketIndex = nextBucketIndex;
-	  int position;
-	  return buckets[nextBucketIndex].getFirstKey (position);
-	}
-    }
-  else
-    {
-      valueIndex = nextValueIndex;
-      return buckets[bucketIndex].getKeyAt (valueIndex);
-    }
 }
 
 template <class KeyT, class ValueT, class HashFuncT>
