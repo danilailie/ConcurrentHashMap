@@ -73,7 +73,7 @@ public:
       {
 	return keyValue.first;
       }
-    return {};
+    return std::nullopt;
   }
 
   Iterator
@@ -85,7 +85,7 @@ public:
     return Iterator (self, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
   }
 
-  std::optional<Iterator>
+  Iterator
   getIteratorForKey (Map const *const aMap, KeyT key, int bucketIndex, int valueIndex, SharedVariantLock bucketLock,
 		     LockType lockType) const
   {
@@ -96,8 +96,7 @@ public:
 	auto self = this->shared_from_this ();
 	return Iterator (self, aMap, bucketIndex, valueIndex, bucketLock, valueLock);
       }
-
-    return {};
+    return aMap->end ();
   }
 
   void

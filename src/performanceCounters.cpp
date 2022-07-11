@@ -1,5 +1,8 @@
 #include "performanceCounters.hpp"
 
+#include <atomic>
+#include <mutex>
+
 std::atomic<uint64_t> GlobalCounter::mutexLockCount = 0;
 std::mutex GlobalCounter::dataMutex;
 std::unordered_map<std::thread::id, Averages> GlobalCounter::threadAverages;

@@ -1,7 +1,9 @@
 #ifndef _PERFORMANCE_COUNTERS_HPP_
 #define _PERFORMANCE_COUNTERS_HPP_
 
+#include <atomic>
 #include <chrono>
+#include <mutex>
 #include <thread>
 #include <unordered_map>
 
